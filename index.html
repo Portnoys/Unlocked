@@ -130,17 +130,28 @@
 </head>
 
 <body>
-<header>
-  <h1>🔓 UNLOCKED</h1>
+<header class="site-header">
+  <div class="header-inner">
+    <!-- הלוגו במרכז -->
+    <img
+      src="unlocked-logo.png"
+      alt="UNLOCKED logo"
+      class="site-logo"
+    />
 
-  <!-- "צור קשר" במקום סטטוס -->
-  <a class="badge" href="mailto:sigalp@gmail.com?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%9E%D7%90%D7%AA%D7%A8%20UNLOCKED">
-    צור קשר
-  </a>
+    <!-- צור קשר בצד -->
+    <a
+      href="mailto:sigalp@gmail.com?subject=פנייה מאתר UNLOCKED"
+      class="badge contact-link"
+    >
+      צור קשר
+    </a>
 
-  <!-- נשאר רק כדי שה-JS לא ייפול -->
-  <span id="status">טוען…</span>
+    <!-- אלמנט סטטוס (נסתר – רק בשביל JS) -->
+    <span id="status" style="display:none">טוען…</span>
+  </div>
 </header>
+
 
 <main>
   <section class="card hidden" id="loginCard">
