@@ -1,173 +1,306 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Clueless</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNLOCKED</title>
 
-  <style>
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;
-      background:#0b1020;
-      color:#eef2ff;
-    }
-    header,main{max-width:1000px;margin:auto;padding:20px}
-    h1{margin-top:0}
-    input,select,textarea,button{
-      width:100%;padding:10px;margin:6px 0;
-      border-radius:8px;border:1px solid #334;
-      background:#111a33;color:#fff;
-    }
-    button{cursor:pointer;background:#7c3aed;font-weight:700}
-    table{width:100%;border-collapse:collapse;margin-top:20px}
-    th,td{border-bottom:1px solid #334;padding:10px;text-align:right}
-    tr:hover{background:#111a33}
-    .card{border:1px solid #334;border-radius:12px;padding:16px;margin-bottom:20px}
-    .pill{display:inline-block;padding:4px 10px;border-radius:20px;background:#111a33}
-    .ok{color:#22c55e}
-  </style>
+<style>
+:root{
+  --bg:#0b1020;
+  --card:#141c3a;
+  --line:#2b3566;
+  --accent:#8b5cf6;
+  --accent2:#22d3ee;
+  --text:#f8fafc;
+  --muted:#c7d2fe;
+  --good:#22c55e;
+}
+body{
+  margin:0;
+  font-family: system-ui,-apple-system,Segoe UI,Arial;
+  background:radial-gradient(1200px 600px at 10% -10%,#1e2a78,var(--bg));
+  color:var(--text);
+  font-size:19px;
+}
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:28px;
+  max-width:1200px;
+  margin:auto;
+}
+h1{
+  margin:0;
+  font-size:42px;
+  letter-spacing:1px;
+}
+main{
+  max-width:1200px;
+  margin:auto;
+  padding:0 24px 40px;
+}
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:26px;
+  margin-bottom:28px;
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+h2{
+  margin-top:0;
+  font-size:28px;
+}
+input,button{
+  width:100%;
+  padding:16px;
+  margin:8px 0;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#0b1020;
+  color:var(--text);
+  font-size:18px;
+}
+button{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border:none;
+  font-weight:800;
+  cursor:pointer;
+}
+button.small{
+  padding:8px 14px;
+  font-size:15px;
+}
+button.danger{
+  background:#ef4444;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:16px;
+  border-bottom:1px solid var(--line);
+  text-align:right;
+}
+th{
+  color:var(--muted);
+}
+tr:hover{
+  background:rgba(255,255,255,.04);
+}
+.badge{
+  display:inline-block;
+  padding:6px 14px;
+  border-radius:999px;
+  background:#0b1020;
+  border:1px solid var(--line);
+}
+.actions button{
+  width:auto;
+  margin-left:6px;
+}
+.ok{color:var(--good)}
+.hidden{display:none}
+</style>
 </head>
 
 <body>
 
 <header>
-  <h1>Clueless 🧩</h1>
-  <p class="pill">סטטוס: <span id="status">מתחבר…</span></p>
+  <h1>🔓 UNLOCKED</h1>
+  <span class="badge">סטטוס: <span id="status">מתחבר…</span></span>
 </header>
 
 <main>
 
-  <section class="card">
-    <h2>הוספת חדר</h2>
-    <input id="name" placeholder="שם החדר">
-    <input id="city" placeholder="עיר">
-    <input id="score" type="number" min="0" max="10" step="0.5" placeholder="הציון שלך">
-    <button id="addRoom" type="button">שמור חדר</button>
-  </section>
+<!-- LOGIN -->
+<section class="card" id="loginCard">
+  <h2>התחברות מנהלת</h2>
+  <input id="email" placeholder="מייל">
+  <input id="password" type="password" placeholder="סיסמה">
+  <button onclick="login()">התחברי</button>
+</section>
 
-  <section class="card">
-    <h2>חדרים</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>שם</th>
-          <th>עיר</th>
-          <th>הציון שלי</th>
-          <th>ממוצע קהילה</th>
-          <th>דרג</th>
-        </tr>
-      </thead>
-      <tbody id="rooms"></tbody>
-    </table>
-  </section>
+<!-- ROOMS -->
+<section class="card">
+  <h2>חדרים</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>שם</th>
+        <th>עיר</th>
+        <th>הציון שלי</th>
+        <th>ממוצע קהילה</th>
+        <th>דירגו</th>
+        <th>פעולות</th>
+      </tr>
+    </thead>
+    <tbody id="rooms"></tbody>
+  </table>
+</section>
+
+<!-- ADMIN -->
+<section class="card hidden" id="adminPanel">
+  <h2 id="formTitle">הוספת חדר</h2>
+  <input id="name" placeholder="שם החדר">
+  <input id="city" placeholder="עיר">
+  <input id="score" type="number" min="1" max="10" step="1" placeholder="הציון שלך (1–10)">
+  <button onclick="saveRoom()">שמור</button>
+</section>
 
 </main>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-  import {
-    getFirestore, collection, addDoc, setDoc, doc,
-    onSnapshot, query, where
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getAuth, signInAnonymously,
+  signInWithEmailAndPassword,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, updateDoc, deleteDoc,
+  doc, onSnapshot, query, where
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  /* ======== Firebase CONFIG (שלך) ======== */
-  const firebaseConfig = {
-    apiKey: "AIzaSyCuaw5E-SJM3ojbw6vhj4gw6MSjId4wosw",
-    authDomain: "unlocked-67483.firebaseapp.com",
-    projectId: "unlocked-67483",
-    storageBucket: "unlocked-67483.firebasestorage.app",
-    messagingSenderId: "565517769840",
-    appId: "1:565517769840:web:aeb892e7ea92713a4e28b5",
-    measurementId: "G-DWR98E9XQ0"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyCuaw5E-SJM3ojbw6vhj4gw6MSjId4wosw",
+  authDomain: "unlocked-67483.firebaseapp.com",
+  projectId: "unlocked-67483",
+  storageBucket: "unlocked-67483.firebasestorage.app",
+  messagingSenderId: "565517769840",
+  appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
+};
 
-  /* ======== Init ======== */
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+const ADMIN_UID = "1Dar4ZKBqkdxTgL07krIwFodvoq2";
 
-  const statusEl = document.getElementById("status");
-  const roomsEl = document.getElementById("rooms");
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  let uid = null;
+const statusEl = document.getElementById("status");
+const adminPanel = document.getElementById("adminPanel");
+const loginCard = document.getElementById("loginCard");
+const roomsEl = document.getElementById("rooms");
 
-  onAuthStateChanged(auth, user => {
-    if(user){
-      uid = user.uid;
-      statusEl.textContent = "מחובר";
-      statusEl.className = "ok";
-      loadRooms();
-    }
+let uid=null, isAdmin=false, editingId=null;
+
+onAuthStateChanged(auth, user=>{
+  if(user){
+    uid=user.uid;
+    isAdmin=user.uid===ADMIN_UID;
+    statusEl.textContent=isAdmin?"מנהלת":"מחובר";
+    statusEl.className="ok";
+    adminPanel.classList.toggle("hidden",!isAdmin);
+    loginCard.classList.toggle("hidden",isAdmin);
+    loadRooms();
+  }else{
+    signInAnonymously(auth);
+  }
+});
+
+window.login = async ()=>{
+  try{
+    await signInWithEmailAndPassword(
+      auth,
+      email.value,
+      password.value
+    );
+  }catch{
+    alert("שגיאת התחברות");
+  }
+};
+
+function loadRooms(){
+  onSnapshot(collection(db,"rooms"), snap=>{
+    roomsEl.innerHTML="";
+    snap.forEach(d=>{
+      const r=d.data();
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${r.name}</td>
+        <td>${r.city||""}</td>
+        <td>${r.score}</td>
+        <td id="avg-${d.id}">—</td>
+        <td id="cnt-${d.id}">0</td>
+        <td class="actions"></td>
+      `;
+      const actions=tr.querySelector(".actions");
+      const rateBtn=document.createElement("button");
+      rateBtn.textContent="דרג";
+      rateBtn.className="small";
+      rateBtn.onclick=()=>rate(d.id);
+      actions.appendChild(rateBtn);
+
+      if(isAdmin){
+        const edit=document.createElement("button");
+        edit.textContent="ערוך";
+        edit.className="small";
+        edit.onclick=()=>{
+          editingId=d.id;
+          name.value=r.name;
+          city.value=r.city;
+          score.value=r.score;
+          formTitle.textContent="עריכת חדר";
+        };
+        const del=document.createElement("button");
+        del.textContent="מחק";
+        del.className="small danger";
+        del.onclick=()=>deleteDoc(doc(db,"rooms",d.id));
+        actions.append(edit,del);
+      }
+
+      roomsEl.appendChild(tr);
+      listenRatings(d.id);
+    });
   });
+}
 
-  await signInAnonymously(auth);
+window.saveRoom=async()=>{
+  if(!isAdmin) return;
+  const s=Number(score.value);
+  if(!name.value||!Number.isInteger(s)||s<1||s>10)
+    return alert("ציון 1–10 בלבד");
 
-  /* ======== Rooms ======== */
-  document.getElementById("addRoom").onclick = async () => {
-    const name = document.getElementById("name").value.trim();
-    const city = document.getElementById("city").value.trim();
-    const score = Number(document.getElementById("score").value);
-
-    if(!name) return alert("חסר שם חדר");
-
+  if(editingId){
+    await updateDoc(doc(db,"rooms",editingId),{
+      name:name.value,
+      city:city.value,
+      score:s
+    });
+    editingId=null;
+    formTitle.textContent="הוספת חדר";
+  }else{
     await addDoc(collection(db,"rooms"),{
-      name, city, score,
-      owner: uid
-    });
-
-    document.getElementById("name").value="";
-    document.getElementById("city").value="";
-    document.getElementById("score").value="";
-  };
-
-  function loadRooms(){
-    onSnapshot(collection(db,"rooms"), snap=>{
-      roomsEl.innerHTML="";
-      snap.forEach(docSnap=>{
-        const r = docSnap.data();
-        const tr = document.createElement("tr");
-
-        const rateBtn = document.createElement("button");
-        rateBtn.textContent = "דרג";
-        rateBtn.onclick = ()=>rate(docSnap.id);
-
-        tr.innerHTML = `
-          <td>${r.name}</td>
-          <td>${r.city||""}</td>
-          <td>${r.score ?? "—"}</td>
-          <td id="avg-${docSnap.id}">—</td>
-          <td></td>
-        `;
-        tr.children[4].appendChild(rateBtn);
-        roomsEl.appendChild(tr);
-
-        listenAvg(docSnap.id);
-      });
+      name:name.value,
+      city:city.value,
+      score:s
     });
   }
+  name.value=city.value=score.value="";
+};
 
-  /* ======== Ratings ======== */
-  async function rate(roomId){
-    const value = prompt("ציון 0–10");
-    if(value===null) return;
+window.rate=async(roomId)=>{
+  const v=Number(prompt("ציון 1–10"));
+  if(!Number.isInteger(v)||v<1||v>10) return;
+  await updateDoc(
+    doc(db,"ratings",`${roomId}_${uid}`),
+    {roomId,uid,value:v}
+  ).catch(()=>addDoc(collection(db,"ratings"),{roomId,uid,value:v}));
+};
 
-    await setDoc(doc(db,"ratings",`${roomId}_${uid}`),{
-      roomId, uid, value:Number(value)
-    });
-  }
-
-  function listenAvg(roomId){
-    const q = query(collection(db,"ratings"), where("roomId","==",roomId));
-    onSnapshot(q,snap=>{
-      let sum=0;
-      snap.forEach(d=>sum+=Number(d.data().value));
-      const avg = snap.size ? (sum/snap.size).toFixed(1) : "—";
-      const el = document.getElementById(`avg-${roomId}`);
-      if(el) el.textContent = avg;
-    });
-  }
+function listenRatings(roomId){
+  const q=query(collection(db,"ratings"),where("roomId","==",roomId));
+  onSnapshot(q,s=>{
+    let sum=0;
+    s.forEach(d=>sum+=d.data().value);
+    document.getElementById(`avg-${roomId}`).textContent=
+      s.size?(sum/s.size).toFixed(1):"—";
+    document.getElementById(`cnt-${roomId}`).textContent=s.size;
+  });
+}
 </script>
 
 </body>
