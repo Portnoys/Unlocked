@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>דירוג חדרי בריחה (Firebase)</title>
+  <style>
+    :root { --bg:#0b1020; --card:#111a33; --text:#eef2ff; --muted:#b7c0ff; --line:#24325e; --accent:#7c3aed; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, #1b2a67 0%, var(--bg) 60%);
+      color:var(--text);
+    }
+    header{padding:28px 16px;max-width:1100px;margin:0 auto}
+    h1{margin:0 0 8px;font-size:clamp(22px,3vw,34px)}
+    p{margin:0;color:var(--muted);line-height:1.6}
+    main{max-width:1100px;margin:0 auto;padding:0 16px 40px;display:grid;gap:18px}
+    .grid{display:grid;gap:16px;grid-template-columns:1fr}
+    @media(min-width:980px){.grid{grid-template-columns:1.1fr 1.9fr}}
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);border-radius:16px;padding:16px;backdrop-filter: blur(6px);
+    }
+    .card h2{margin:0 0 10px;font-size:18px}
+    label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+    input,select,textarea{
+      width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+      background: rgba(10,15,30,.6);color:var(--text);outline:none;
+    }
+    textarea{min-height:70px;resize:vertical}
+    .row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+    .row3{display:grid;gap:12px;grid-template-columns:1fr 1fr 1fr}
+    @media(max-width:640px){.row,.row3{grid-template-columns:1fr}}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{
+      border:0;border-radius:12px;padding:10px 14px;background:var(--accent);color:#fff;cursor:pointer;font-weight:600
+    }
+    button.secondary{background:rgba(255,255,255,.08);border:1px solid var(--line)}
+    button.danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35)}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .toolbar>*{flex:1 1 180px}
+    table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:14px;border:1px solid var(--line)}
+    th,td{padding:12px;border-bottom:1px solid rgba(36,50,94,.8);text-align:right;vertical-align:top}
+    th{font-size:13px;color:var(--muted);background:rgba(255,255,255,.04);position:sticky;top:0}
+    tr:hover td{background:rgba(255,255,255,.03)}
+    .pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:12px;color:var(--muted)}
+    .score{font-weight:800}
+    .score.good{color:var(--good)}
+    .score.warn{color:var(--warn)}
+    .score.bad{color:var(--bad)}
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+    .nowrap{white-space:nowrap}
+    .links a{color:#c4b5fd;text-decoration:none}
+    .links a:hover{text-decoration:underline}
+    footer{max-width:1100px;margin:0 auto;padding:0 16px 30px;color:var(--muted)}
+    .note{font-size:13px;line-height:1.7}
+    .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      border:1px solid var(--line);background:rgba(255,255,255,.05);padding:2px 8px;border-radius:8px}
+    .statusDot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--warn)}
+    .statusDot.ok{background:var(--good)}
+    .statusDot.bad{background:var(--bad)}
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>דירוג חדרי בריחה</h1>
+    <p class="inline">
+      <span class="pill"><span id="statusDot" class="statusDot"></span> <span id="statusText">מתחבר ל-Firebase…</span></span>
+      <span class="pill">UID: <strong id="uidLabel">—</strong></span>
+      <span class="pill">טיפ: ב-GitHub Pages הכל סטטי, אבל הדירוגים נשמרים בענן דרך Firestore.</span>
+    </p>
+  </header>
+
+  <main class="grid">
+    <!-- LEFT: Add/Edit Room (owner only edits) -->
+    <section class="card" aria-label="הוספת חדר">
+      <h2 id="formTitle">הוספת חדר חדש</h2>
+
+      <div class="row">
+        <div>
+          <label for="roomName">שם החדר</label>
+          <input id="roomName" placeholder="למשל: The Heist" />
+        </div>
+        <div>
+          <label for="company">חברה / מקום</label>
+          <input id="company" placeholder="למשל: Escape TLV" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="city">עיר</label>
+          <input id="city" placeholder="למשל: תל אביב" />
+        </div>
+        <div>
+          <label for="area">אזור</label>
+          <select id="area">
+            <option value="">בחר/י</option>
+            <option>מרכז</option>
+            <option>שרון</option>
+            <option>צפון</option>
+            <option>דרום</option>
+            <option>ירושלים והסביבה</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row3">
+        <div>
+          <label for="visitDate">תאריך ביקור</label>
+          <input id="visitDate" type="date" />
+        </div>
+        <div>
+          <label for="peopleCount">מספר אנשים</label>
+          <input id="peopleCount" type="number" min="1" step="1" placeholder="למשל: 4" />
+        </div>
+        <div>
+          <label for="yourScore">הציון שלך (0–10)</label>
+          <input id="yourScore" type="number" min="0" max="10" step="0.1" placeholder="למשל: 8.5" />
+        </div>
+      </div>
+
+      <label for="mapUrl">קישור מפה (Google Maps) – אופציונלי</label>
+      <input id="mapUrl" placeholder="הדבק/י קישור" />
+
+      <label for="notes">הערות (אופציונלי)</label>
+      <textarea id="notes" placeholder="מה אהבת? מה פחות?"></textarea>
+
+      <div class="btns">
+        <button id="saveBtn" disabled>שמור</button>
+        <button id="cancelEditBtn" class="secondary" disabled>בטל עריכה</button>
+        <button id="seedBtn" class="secondary" disabled>טען דוגמה</button>
+      </div>
+
+      <p class="note" style="margin-top:12px;">
+        בגרסה הזו: רק מי שיצר את החדר (owner) יוכל לערוך/למחוק אותו, אבל <strong>כולם</strong> יכולים לקרוא ולדרג.
+      </p>
+    </section>
+
+    <!-- RIGHT: List + Ratings -->
+    <section class="card" aria-label="רשימת חדרים">
+      <div class="toolbar" style="margin-bottom: 12px;">
+        <div>
+          <label for="search">חיפוש</label>
+          <input id="search" placeholder="חפש/י לפי שם/עיר/חברה" />
+        </div>
+        <div>
+          <label for="sortBy">מיון</label>
+          <select id="sortBy">
+            <option value="date_desc">תאריך (חדש→ישן)</option>
+            <option value="date_asc">תאריך (ישן→חדש)</option>
+            <option value="your_desc">הציון שלי (גבוה→נמוך)</option>
+            <option value="your_asc">הציון שלי (נמוך→גבוה)</option>
+            <option value="community_desc">ממוצע קהילה (גבוה→נמוך)</option>
+            <option value="name_asc">שם (א-ת)</option>
+          </select>
+        </div>
+        <div>
+          <label for="areaFilter">סינון לפי אזור</label>
+          <select id="areaFilter">
+            <option value="">הכל</option>
+            <option>מרכז</option>
+            <option>שרון</option>
+            <option>צפון</option>
+            <option>דרום</option>
+            <option>ירושלים והסביבה</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="overflow:auto; max-height: 520px; border-radius: 14px;">
+        <table aria-label="טבלת חדרים">
+          <thead>
+            <tr>
+              <th class="nowrap">חדר</th>
+              <th class="nowrap">מיקום</th>
+              <th class="nowrap">תאריך / אנשים</th>
+              <th class="nowrap">הציון שלי</th>
+              <th class="nowrap">קהילה</th>
+              <th class="nowrap">פעולות</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top: 14px;">
+        <h2 style="margin-bottom: 8px;">דירוג מבקרים (משותף)</h2>
+        <p class="muted small">בחר/י חדר ואז דרג/י. אם כבר דירגת – זה יעדכן את הדירוג שלך (דירוג אחד למשתמש לכל חדר).</p>
+
+        <div class="inline" style="margin-top: 10px;">
+          <span class="pill">חדר נבחר: <strong id="selectedRoomLabel">—</strong></span>
+          <span class="pill">מספר דירוגים: <strong id="ratingCountLabel">0</strong></span>
+          <span class="pill">ממוצע: <strong id="ratingAvgLabel">—</strong></span>
+          <span class="pill">הדירוג שלי: <strong id="myRatingLabel">—</strong></span>
+        </div>
+
+        <label style="margin-top: 12px;">הדירוג שלך (0–10)</label>
+        <div class="inline">
+          <input id="ratingRange" type="range" min="0" max="10" step="0.5" value="8" style="width:260px" />
+          <span class="pill">ערך: <strong id="ratingValue">8</strong></span>
+          <button id="saveRatingBtn" disabled>שמור דירוג</button>
+        </div>
+
+        <label for="raterName">שם (אופציונלי)</label>
+        <input id="raterName" placeholder="למשל: דנה" />
+
+        <label for="raterNote">הערה קצרה (אופציונלי)</label>
+        <input id="raterNote" placeholder="למשל: מושקע ממש!" />
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="note">
+      <p>
+        GitHub Pages: <span class="kbd">Settings</span> → <span class="kbd">Pages</span> → Branch: <span class="kbd">main</span> / <span class="kbd">/root</span>.
+      </p>
+      <p>
+        אם תרצה/תרצי: אפשר להוסיף קטגוריות דירוג (סיפור/תפאורה/קושי), מפה, או מנגנון אנטי-ספאם (reCAPTCHA / Cloud Functions).
+      </p>
+    </div>
+  </footer>
+
+<script type="module">
+  // =========================
+  //  Firebase imports (v10+ modular)
+  // =========================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, signInAnonymously
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import {
+    getFirestore, collection, doc, setDoc, addDoc, deleteDoc, updateDoc,
+    onSnapshot, query, orderBy, serverTimestamp, getDoc, getDocs, where
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  // =========================
+  //  1) PASTE YOUR CONFIG HERE
+  // =========================
+  const firebaseConfig = {
+    // 🔥 הדבק/י כאן את ה-config מה-Firebase Console
+    // apiKey: "...",
+    // authDomain: "...",
+    // projectId: "...",
+    // storageBucket: "...",
+    // messagingSenderId: "...",
+    // appId: "..."
+  };
+
+  // Basic check
+  if (!firebaseConfig || !firebaseConfig.projectId) {
+    alert("חסר firebaseConfig. פתח/י את index.html והדבק/י את הקונפיגורציה מה-Firebase Console.");
+    throw new Error("Missing firebaseConfig");
+  }
+
+  // =========================
+  //  Init
+  // =========================
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // =========================
+  //  DOM
+  // =========================
+  const el = (id) => document.getElementById(id);
+
+  const statusDot = el("statusDot");
+  const statusText = el("statusText");
+  const uidLabel = el("uidLabel");
+
+  const formTitle = el("formTitle");
+  const roomName = el("roomName");
+  const company = el("company");
+  const city = el("city");
+  const area = el("area");
+  const visitDate = el("visitDate");
+  const peopleCount = el("peopleCount");
+  const yourScore = el("yourScore");
+  const mapUrl = el("mapUrl");
+  const notes = el("notes");
+
+  const saveBtn = el("saveBtn");
+  const cancelEditBtn = el("cancelEditBtn");
+  const seedBtn = el("seedBtn");
+
+  const search = el("search");
+  const sortBy = el("sortBy");
+  const areaFilter = el("areaFilter");
+  const tbody = el("tbody");
+
+  const selectedRoomLabel = el("selectedRoomLabel");
+  const ratingCountLabel = el("ratingCountLabel");
+  const ratingAvgLabel = el("ratingAvgLabel");
+  const myRatingLabel = el("myRatingLabel");
+
+  const ratingRange = el("ratingRange");
+  const ratingValue = el("ratingValue");
+  const saveRatingBtn = el("saveRatingBtn");
+  const raterName = el("raterName");
+  const raterNote = el("raterNote");
+
+  // =========================
+  //  State
+  // =========================
+  let uid = null;
+  let rooms = [];      // from Firestore rooms
+  let ratings = [];    // from Firestore ratings (all)
+  let editingId = null;
+  let selectedId = null;
+
+  // =========================
+  //  Utils
+  // =========================
+  function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+  function toNum(v){ const n = Number(v); return Number.isFinite(n) ? n : null; }
+  function fmtDate(iso){
+    if(!iso) return "—";
+    try { const [y,m,d] = iso.split("-").map(Number);
+      return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${y}`;
+    } catch { return iso; }
+  }
+  function scoreClass(v){
+    if(v==null) return "";
+    if(v>=8) return "good";
+    if(v>=6) return "warn";
+    return "bad";
+  }
+  function escapeHTML(s){
+    return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]));
+  }
+  function escapeAttr(s){ return escapeHTML(s).replace(/"/g,"&quot;"); }
+
+  function setStatus(kind, text){
+    statusDot.classList.remove("ok","bad");
+    if(kind==="ok") statusDot.classList.add("ok");
+    if(kind==="bad") statusDot.classList.add("bad");
+    statusText.textContent = text;
+  }
+
+  function communityStats(roomId){
+    const list = ratings.filter(r => r.roomId === roomId);
+    if(!list.length) return {count:0, avg:null};
+    const avg = list.reduce((s,r)=>s+Number(r.value||0),0)/list.length;
+    return {count:list.length, avg: Math.round(avg*10)/10};
+  }
+
+  function myRatingFor(roomId){
+    if(!uid) return null;
+    const r = ratings.find(x => x.roomId === roomId && x.uid === uid);
+    return r ? r.value : null;
+  }
+
+  // =========================
+  //  Auth
+  // =========================
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      uid = user.uid;
+      uidLabel.textContent = uid;
+      setStatus("ok", "מחובר");
+      enableUI(true);
+      startRealtimeListeners();
+    } else {
+      setStatus("bad", "לא מחובר. מנסה להתחבר…");
+      enableUI(false);
+      try {
+        await signInAnonymously(auth);
+      } catch (e) {
+        console.error(e);
+        setStatus("bad", "שגיאת התחברות (בדוק/י שהפעלת Anonymous Auth)");
+      }
+    }
+  });
+
+  function enableUI(on){
+    saveBtn.disabled = !on;
+    seedBtn.disabled = !on;
+    // rating button depends on selected
+    saveRatingBtn.disabled = !on || !selectedId;
+  }
+
+  // =========================
+  //  Firestore listeners
+  // =========================
+  let unsubRooms = null;
+  let unsubRatings = null;
+
+  function startRealtimeListeners(){
+    if (unsubRooms) unsubRooms();
+    if (unsubRatings) unsubRatings();
+
+    // rooms: newest first by createdAt
+    const qRooms = query(collection(db, "rooms"), orderBy("createdAt", "desc"));
+    unsubRooms = onSnapshot(qRooms, (snap) => {
+      rooms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (!selectedId && rooms[0]) selectedId = rooms[0].id;
+      renderAll();
+    });
+
+    // ratings: all (simple). For huge scale, would aggregate or query by room.
+    const qRatings = query(collection(db, "ratings"), orderBy("updatedAt", "desc"));
+    unsubRatings = onSnapshot(qRatings, (snap) => {
+      ratings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderAll();
+    });
+  }
+
+  // =========================
+  //  Render
+  // =========================
+  function getFilteredSortedRooms(){
+    const q = search.value.trim().toLowerCase();
+    const af = areaFilter.value;
+
+    let list = rooms.filter(r => {
+      const hay = `${r.name||""} ${r.company||""} ${r.city||""} ${r.area||""}`.toLowerCase();
+      const okQ = !q || hay.includes(q);
+      const okA = !af || r.area === af;
+      return okQ && okA;
+    });
+
+    const cmp = {
+      date_desc: (a,b)=> (b.date||"").localeCompare(a.date||""),
+      date_asc:  (a,b)=> (a.date||"").localeCompare(b.date||""),
+      your_desc: (a,b)=> (toNum(b.yourScore)||-1) - (toNum(a.yourScore)||-1),
+      your_asc:  (a,b)=> (toNum(a.yourScore)||999) - (toNum(b.yourScore)||999),
+      community_desc: (a,b)=> {
+        const A = communityStats(a.id).avg; const B = communityStats(b.id).avg;
+        return (B ?? -1) - (A ?? -1);
+      },
+      name_asc: (a,b)=> (a.name||"").localeCompare(b.name||"", "he")
+    }[sortBy.value] || (()=>0);
+
+    list.sort(cmp);
+    return list;
+  }
+
+  function renderTable(){
+    const list = getFilteredSortedRooms();
+    tbody.innerHTML = "";
+
+    if(!list.length){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="6" class="muted">אין עדיין חדרים. הוסף/י אחד משמאל או לחץ/י "טען דוגמה".</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+
+    for (const r of list){
+      const stats = communityStats(r.id);
+      const isSelected = r.id === selectedId;
+
+      const canEdit = uid && r.ownerUid === uid;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <div style="font-weight:800">${escapeHTML(r.name || "—")}</div>
+          <div class="small muted">${escapeHTML(r.company || "")}</div>
+          ${r.mapUrl ? `<div class="small links"><a href="${escapeAttr(r.mapUrl)}" target="_blank" rel="noopener">מפה</a></div>` : ""}
+          ${r.notes ? `<div class="small muted" style="margin-top:6px">${escapeHTML(r.notes)}</div>` : ""}
+        </td>
+        <td class="nowrap">
+          <span class="pill">${escapeHTML(r.city || "—")}</span>
+          ${r.area ? `<span class="pill">${escapeHTML(r.area)}</span>` : ""}
+        </td>
+        <td class="nowrap">
+          <div>${fmtDate(r.date)}</div>
+          <div class="small muted">${r.peopleCount ? `${escapeHTML(String(r.peopleCount))} אנשים` : "—"}</div>
+        </td>
+        <td class="nowrap">
+          <span class="score ${scoreClass(toNum(r.yourScore))}">${r.yourScore ?? "—"}</span>
+        </td>
+        <td class="nowrap">
+          <div><span class="score ${scoreClass(stats.avg)}">${stats.avg ?? "—"}</span></div>
+          <div class="small muted">${stats.count} דירוגים</div>
+        </td>
+        <td class="nowrap">
+          <div class="btns" style="margin:0">
+            <button class="secondary" data-act="select" data-id="${r.id}">${isSelected ? "נבחר ✓" : "בחר"}</button>
+            <button class="secondary" data-act="edit" data-id="${r.id}" ${canEdit ? "" : "disabled"} title="${canEdit ? "" : "רק היוצר יכול לערוך"}">ערוך</button>
+            <button class="danger" data-act="del" data-id="${r.id}" ${canEdit ? "" : "disabled"} title="${canEdit ? "" : "רק היוצר יכול למחוק"}">מחק</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderSelectedStats(){
+    const r = rooms.find(x => x.id === selectedId);
+    selectedRoomLabel.textContent = r ? r.name : "—";
+
+    const stats = selectedId ? communityStats(selectedId) : {count:0, avg:null};
+    ratingCountLabel.textContent = String(stats.count);
+    ratingAvgLabel.textContent = stats.avg ?? "—";
+
+    const mine = selectedId ? myRatingFor(selectedId) : null;
+    myRatingLabel.textContent = mine ?? "—";
+
+    saveRatingBtn.disabled = !uid || !selectedId;
+  }
+
+  function renderAll(){
+    renderTable();
+    renderSelectedStats();
+  }
+
+  // =========================
+  //  Form actions (Rooms)
+  // =========================
+  function clearForm(){
+    roomName.value = "";
+    company.value = "";
+    city.value = "";
+    area.value = "";
+    visitDate.value = "";
+    peopleCount.value = "";
+    yourScore.value = "";
+    mapUrl.value = "";
+    notes.value = "";
+  }
+
+  function fillForm(r){
+    roomName.value = r.name || "";
+    company.value = r.company || "";
+    city.value = r.city || "";
+    area.value = r.area || "";
+    visitDate.value = r.date || "";
+    peopleCount.value = r.peopleCount ?? "";
+    yourScore.value = r.yourScore ?? "";
+    mapUrl.value = r.mapUrl || "";
+    notes.value = r.notes || "";
+  }
+
+  function setEditing(id){
+    editingId = id;
+    cancelEditBtn.disabled = !id;
+    formTitle.textContent = id ? "עריכת חדר" : "הוספת חדר חדש";
+    saveBtn.textContent = id ? "עדכן" : "שמור";
+  }
+
+  async function upsertRoom(){
+    if(!uid){ alert("לא מחובר."); return; }
+    const name = roomName.value.trim();
+    if(!name){ alert("חסר שם חדר."); return; }
+
+    const pc = toNum(peopleCount.value);
+    const ys = toNum(yourScore.value);
+    const safeYs = ys == null ? null : Math.round(clamp(ys,0,10)*10)/10;
+
+    const payload = {
+      name,
+      company: company.value.trim() || "",
+      city: city.value.trim() || "",
+      area: area.value || "",
+      date: visitDate.value || "",
+      peopleCount: pc == null ? null : Math.max(1, Math.floor(pc)),
+      yourScore: safeYs,
+      mapUrl: mapUrl.value.trim() || "",
+      notes: notes.value.trim() || "",
+      updatedAt: serverTimestamp()
+    };
+
+    try{
+      if(editingId){
+        // Only owner can edit (rules enforce)
+        await updateDoc(doc(db, "rooms", editingId), payload);
+      } else {
+        await addDoc(collection(db, "rooms"), {
+          ...payload,
+          ownerUid: uid,
+          createdAt: serverTimestamp()
+        });
+      }
+      clearForm();
+      setEditing(null);
+    } catch(e){
+      console.error(e);
+      alert("שגיאה בשמירה. בדוק/י Rules והרשאות.");
+    }
+  }
+
+  async function deleteRoom(roomId){
+    const r = rooms.find(x=>x.id===roomId);
+    if(!r) return;
+    if(r.ownerUid !== uid){ alert("רק היוצר יכול למחוק."); return; }
+    if(!confirm(`למחוק את "${r.name}"?`)) return;
+
+    try{
+      await deleteDoc(doc(db,"rooms",roomId));
+      // לא מוחקים דירוגים כאן (אפשר, אבל דורש Cloud Function / הרשאות מיוחדות)
+      if(selectedId === roomId) selectedId = rooms.find(x=>x.id!==roomId)?.id || null;
+      if(editingId === roomId){ setEditing(null); clearForm(); }
+    } catch(e){
+      console.error(e);
+      alert("שגיאה במחיקה. בדוק/י Rules.");
+    }
+  }
+
+  async function seedExample(){
+    if(!uid) return;
+    if(rooms.length && !confirm("כבר יש חדרים. להוסיף דוגמה בכל זאת?")) return;
+
+    const examples = [
+      { name:"The Heist", company:"Escape TLV", city:"תל אביב", area:"מרכז", date:"2025-11-02", peopleCount:4, yourScore:8.7, notes:"תפאורה מעולה, סוף מפתיע." },
+      { name:"Pharaoh's Curse", company:"Mystery Rooms", city:"חיפה", area:"צפון", date:"2025-10-12", peopleCount:5, yourScore:7.9, notes:"חידות כיפיות, קצת צפוף." },
+      { name:"Space Station", company:"Escape Jerusalem", city:"ירושלים", area:"ירושלים והסביבה", date:"2025-09-20", peopleCount:3, yourScore:9.1, notes:"קצב טוב וחידות מגוונות." }
+    ];
+
+    try{
+      for(const ex of examples){
+        await addDoc(collection(db,"rooms"), {
+          ...ex,
+          mapUrl: "",
+          ownerUid: uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+    } catch(e){
+      console.error(e);
+      alert("שגיאה בטעינת דוגמה. בדוק/י Rules.");
+    }
+  }
+
+  // =========================
+  //  Ratings (shared)
+  // =========================
+  function ratingDocId(roomId, uid){
+    // דירוג אחד למשתמש לכל חדר
+    return `${roomId}_${uid}`;
+  }
+
+  async function saveRating(){
+    if(!uid || !selectedId) return;
+
+    const value = Math.round(clamp(Number(ratingRange.value),0,10)*10)/10;
+    const name = raterName.value.trim() || "";
+    const note = raterNote.value.trim() || "";
+
+    const id = ratingDocId(selectedId, uid);
+    const ref = doc(db, "ratings", id);
+
+    try{
+      await setDoc(ref, {
+        roomId: selectedId,
+        uid,
+        value,
+        name,
+        note,
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp() // setDoc will override; still ok for simple use
+      }, { merge: true });
+
+      raterName.value = "";
+      raterNote.value = "";
+    } catch(e){
+      console.error(e);
+      alert("שגיאה בשמירת דירוג. בדוק/י Rules.");
+    }
+  }
+
+  // =========================
+  //  Events
+  // =========================
+  saveBtn.addEventListener("click", upsertRoom);
+  cancelEditBtn.addEventListener("click", () => { setEditing(null); clearForm(); });
+  seedBtn.addEventListener("click", seedExample);
+
+  [search, sortBy, areaFilter].forEach(x => x.addEventListener("input", renderTable));
+
+  ratingRange.addEventListener("input", () => ratingValue.textContent = ratingRange.value);
+  saveRatingBtn.addEventListener("click", saveRating);
+
+  tbody.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    const id = btn.getAttribute("data-id");
+    const act = btn.getAttribute("data-act");
+
+    if(act==="select"){
+      selectedId = id;
+      renderAll();
+      return;
+    }
+
+    if(act==="edit"){
+      const r = rooms.find(x => x.id === id);
+      if(!r) return;
+      if(r.ownerUid !== uid) return;
+
+      setEditing(id);
+      fillForm(r);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if(act==="del"){
+      await deleteRoom(id);
+    }
+  });
+
+  // =========================
+  //  Kick auth
+  // =========================
+  (async () => {
+    try{
+      await signInAnonymously(auth);
+    } catch (e){
+      console.error(e);
+      setStatus("bad", "לא הצלחתי להתחבר. בדוק/י שהפעלת Anonymous Auth.");
+    }
+  })();
+
+</script>
+</body>
+</html>
