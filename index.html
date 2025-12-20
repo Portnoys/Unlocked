@@ -32,6 +32,8 @@
       border-radius:999px;
       background:#0b1020;
       border:1px solid var(--line);
+      text-decoration:none;
+      color:inherit;
     }
     .ok{color:var(--good)}
 
@@ -100,7 +102,6 @@
       padding:18px;
       z-index:10000;
     }
-    /* ✅ זה התיקון הקריטי */
     .modalOverlay.hidden{ display:none !important; }
 
     .modal{
@@ -112,7 +113,6 @@
       box-shadow:0 22px 60px rgba(0,0,0,.55);
     }
     .modal h3{margin:0 0 10px; font-size:24px}
-    .modal p{margin:10px 0; color:var(--muted); line-height:1.6}
     .modalActions{display:flex; gap:10px; margin-top:14px}
     .modalActions button{flex:1}
     .checkboxRow{
@@ -123,17 +123,23 @@
     }
     .checkboxRow input{width:auto; margin-top:4px}
     .checkboxRow label{font-size:16px; color:var(--text)}
+
+    /* status is kept only for JS, hidden from UI */
+    #status { display:none; }
   </style>
 </head>
 
 <body>
 <header>
   <h1>🔓 UNLOCKED</h1>
-<a href="mailto:sigalp@gmail.com?subject=פנייה מאתר UNLOCKED"
-   class="badge"
-   style="text-decoration:none;color:inherit">
-  צור קשר
-</a>
+
+  <!-- "צור קשר" במקום סטטוס -->
+  <a class="badge" href="mailto:sigalp@gmail.com?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%9E%D7%90%D7%AA%D7%A8%20UNLOCKED">
+    צור קשר
+  </a>
+
+  <!-- נשאר רק כדי שה-JS לא ייפול -->
+  <span id="status">טוען…</span>
 </header>
 
 <main>
@@ -148,11 +154,11 @@
   </section>
 
   <section class="card">
-    <h2>חדרים (ממויין לפי ציון האתר)</h2>
+    <h2>חדרים (ממויין לפי הציון שלי)</h2>
     <table>
       <thead>
         <tr>
-          <th>שם</th><th>עיר</th><th>ציון האתר</th>
+          <th>שם</th><th>עיר</th><th>ציון היוצר/ת</th>
           <th>ממוצע קהילה</th><th>דירגו</th><th>פעולות</th>
         </tr>
       </thead>
@@ -168,7 +174,7 @@
       <input id="city" placeholder="עיר">
     </div>
 
-    <input id="score" type="number" min="1" max="10" step="1" inputmode="numeric" placeholder="הציון שלי (1–10, שלם בלבד)">
+    <input id="score" type="number" min="1" max="10" step="1" inputmode="numeric" placeholder="ציון היוצר/ת (1–10, שלם בלבד)">
     <button id="saveBtn">שמור</button>
 
     <hr>
@@ -186,7 +192,6 @@
 <div id="pledgeOverlay" class="modalOverlay hidden" role="dialog" aria-modal="true">
   <div class="modal" id="pledgeModal">
     <h3 id="pledgeTitle">דירוג חדר</h3>
-    <p id="pledgeText">לפני שמעדכנים את הדירוג, צריך לאשר:</p>
 
     <div class="checkboxRow">
       <input type="checkbox" id="pledgeCheck">
@@ -221,47 +226,46 @@
     appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
   };
 
-  // ✅ להשאיר כמו אצלך
+  // ✅ לשים כאן את המייל שאת מתחברת איתו כמנהלת
   const ADMIN_EMAIL = "sigalp@gmail.com";
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const statusEl = document.getElementById("status");
-  const roomsEl = document.getElementById("rooms");
+  const statusEl   = document.getElementById("status"); // hidden but exists
+  const roomsEl    = document.getElementById("rooms");
   const adminPanel = document.getElementById("adminPanel");
-  const loginCard = document.getElementById("loginCard");
-  const secretDot = document.getElementById("secretLogin");
+  const loginCard  = document.getElementById("loginCard");
+  const secretDot  = document.getElementById("secretLogin");
 
-  const emailEl = document.getElementById("email");
-  const passEl = document.getElementById("password");
+  const emailEl  = document.getElementById("email");
+  const passEl   = document.getElementById("password");
   const loginBtn = document.getElementById("loginBtn");
 
-  const nameEl = document.getElementById("name");
-  const cityEl = document.getElementById("city");
-  const scoreEl = document.getElementById("score");
-  const saveBtn = document.getElementById("saveBtn");
+  const nameEl    = document.getElementById("name");
+  const cityEl    = document.getElementById("city");
+  const scoreEl   = document.getElementById("score");
+  const saveBtn   = document.getElementById("saveBtn");
   const formTitle = document.getElementById("formTitle");
 
   const excelFile = document.getElementById("excelFile");
   const importBtn = document.getElementById("importBtn");
 
-  const pledgeOverlay = document.getElementById("pledgeOverlay");
-  const pledgeModal = document.getElementById("pledgeModal");
-  const pledgeTitle = document.getElementById("pledgeTitle");
-  const pledgeCheck = document.getElementById("pledgeCheck");
-  const pledgeCancelBtn = document.getElementById("pledgeCancelBtn");
+  const pledgeOverlay    = document.getElementById("pledgeOverlay");
+  const pledgeModal      = document.getElementById("pledgeModal");
+  const pledgeTitle      = document.getElementById("pledgeTitle");
+  const pledgeCheck      = document.getElementById("pledgeCheck");
+  const pledgeCancelBtn  = document.getElementById("pledgeCancelBtn");
   const pledgeConfirmBtn = document.getElementById("pledgeConfirmBtn");
 
   let uid = null;
   let isAdmin = false;
   let editingId = null;
 
-  // state for rating pledge
   let pendingRate = null; // {roomId, value, roomName}
 
-  // Always start as guest (admin only via secret dot each load)
+  // תמיד להתחיל אורח (מנהלת רק מהנקודה אחרי רפרש)
   try { await signOut(auth); } catch {}
 
   secretDot.onclick = () => loginCard.classList.toggle("hidden");
@@ -270,8 +274,7 @@
     if (!user) {
       uid = null;
       isAdmin = false;
-      statusEl.textContent = "אורח";
-      statusEl.className = "";
+      if (statusEl) statusEl.textContent = "אורח";
       adminPanel.classList.add("hidden");
       await signInAnonymously(auth);
       return;
@@ -282,8 +285,7 @@
     const adminEmail = (ADMIN_EMAIL || "").toLowerCase().trim();
     isAdmin = adminEmail !== "" && currentEmail === adminEmail;
 
-    statusEl.textContent = isAdmin ? "מנהלת" : "אורח";
-    statusEl.className = isAdmin ? "ok" : "";
+    if (statusEl) statusEl.textContent = isAdmin ? "מנהלת" : "אורח";
     adminPanel.classList.toggle("hidden", !isAdmin);
 
     loadRooms();
@@ -299,65 +301,72 @@
     }
   };
 
-  // ✅ SORT: descending by your score (10 top)
   function loadRooms() {
     const qRooms = query(collection(db, "rooms"));
-    onSnapshot(qRooms, (snap) => {
-      const rows = [];
-      snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
+    onSnapshot(
+      qRooms,
+      (snap) => {
+        const rows = [];
+        snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
 
-      rows.sort((a, b) => (Number(b.score ?? -999) - Number(a.score ?? -999)));
+        // מיון יורד לפי ציון היוצר/ת (score)
+        rows.sort((a, b) => (Number(b.score ?? -999) - Number(a.score ?? -999)));
 
-      roomsEl.innerHTML = "";
-      for (const r of rows) {
-        const tr = document.createElement("tr");
+        roomsEl.innerHTML = "";
+        for (const r of rows) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHTML(r.name)}</td>
+            <td>${escapeHTML(r.city || "")}</td>
+            <td>${escapeHTML(String(r.score ?? ""))}</td>
+            <td id="avg-${r.id}">—</td>
+            <td id="cnt-${r.id}">0</td>
+            <td class="actions"></td>
+          `;
 
-        tr.innerHTML = `
-          <td>${escapeHTML(r.name)}</td>
-          <td>${escapeHTML(r.city || "")}</td>
-          <td>${escapeHTML(String(r.score ?? ""))}</td>
-          <td id="avg-${r.id}">—</td>
-          <td id="cnt-${r.id}">0</td>
-          <td class="actions"></td>
-        `;
+          const actions = tr.querySelector(".actions");
 
-        const actions = tr.querySelector(".actions");
+          const rateBtn = document.createElement("button");
+          rateBtn.textContent = "דרג";
+          rateBtn.className = "small";
+          rateBtn.onclick = () => startRateFlow(r.id, r.name);
+          actions.appendChild(rateBtn);
 
-        const rateBtn = document.createElement("button");
-        rateBtn.textContent = "דרג";
-        rateBtn.className = "small";
-        rateBtn.onclick = () => startRateFlow(r.id, r.name);
-        actions.appendChild(rateBtn);
+          if (isAdmin) {
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "ערוך";
+            editBtn.className = "small";
+            editBtn.onclick = () => {
+              editingId = r.id;
+              nameEl.value = r.name || "";
+              cityEl.value = r.city || "";
+              scoreEl.value = String(r.score ?? "");
+              formTitle.textContent = "עריכת חדר";
+              window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+            };
 
-        if (isAdmin) {
-          const editBtn = document.createElement("button");
-          editBtn.textContent = "ערוך";
-          editBtn.className = "small";
-          editBtn.onclick = () => {
-            editingId = r.id;
-            nameEl.value = r.name || "";
-            cityEl.value = r.city || "";
-            scoreEl.value = String(r.score ?? "");
-            formTitle.textContent = "עריכת חדר";
-            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-          };
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "מחק";
+            delBtn.className = "small danger";
+            delBtn.onclick = async () => {
+              if (!confirm(`למחוק את "${r.name}"?`)) return;
+              try { await deleteDoc(doc(db, "rooms", r.id)); }
+              catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
+            };
 
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "מחק";
-          delBtn.className = "small danger";
-          delBtn.onclick = async () => {
-            if (!confirm(`למחוק את "${r.name}"?`)) return;
-            try { await deleteDoc(doc(db, "rooms", r.id)); }
-            catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
-          };
+            actions.append(editBtn, delBtn);
+          }
 
-          actions.append(editBtn, delBtn);
+          roomsEl.appendChild(tr);
+          listenRatings(r.id);
         }
-
-        roomsEl.appendChild(tr);
-        listenRatings(r.id);
+      },
+      (err) => {
+        console.error("Rooms read error:", err);
+        alert("שגיאה בטעינת חדרים: " + (err.code || err.message));
+        roomsEl.innerHTML = "";
       }
-    });
+    );
   }
 
   saveBtn.onclick = async () => {
@@ -381,7 +390,10 @@
       } else {
         await addDoc(collection(db, "rooms"), { name, city, score: s });
       }
-      nameEl.value = ""; cityEl.value = ""; scoreEl.value = "";
+
+      nameEl.value = "";
+      cityEl.value = "";
+      scoreEl.value = "";
       alert("נשמר ✅");
     } catch (e) {
       console.error(e);
@@ -389,7 +401,6 @@
     }
   };
 
-  // ⭐ New rating flow with pledge
   function startRateFlow(roomId, roomName){
     const v = parseInt(prompt("ציון 1–10"), 10);
     if (Number.isNaN(v) || v < 1 || v > 10) return;
@@ -397,61 +408,34 @@
     pendingRate = { roomId, value: v, roomName };
     pledgeTitle.textContent = `דירוג: ${roomName}`;
     pledgeCheck.checked = false;
-
-    openPledgeModal();
-  }
-
-  function openPledgeModal(){
     pledgeOverlay.classList.remove("hidden");
   }
 
-  function closePledgeModal(){
+  function closePledge(){
     pledgeOverlay.classList.add("hidden");
     pendingRate = null;
     pledgeCheck.checked = false;
   }
 
-  pledgeCancelBtn.onclick = closePledgeModal;
-
-  // ✅ Close by clicking outside the modal
-  pledgeOverlay.addEventListener("click", (e) => {
-    if (e.target === pledgeOverlay) closePledgeModal();
-  });
-
-  // ✅ Prevent close when clicking inside modal
+  pledgeCancelBtn.onclick = closePledge;
+  pledgeOverlay.addEventListener("click", (e) => { if (e.target === pledgeOverlay) closePledge(); });
   pledgeModal.addEventListener("click", (e) => e.stopPropagation());
-
-  // ✅ Close with ESC
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !pledgeOverlay.classList.contains("hidden")) {
-      closePledgeModal();
-    }
+    if (e.key === "Escape" && !pledgeOverlay.classList.contains("hidden")) closePledge();
   });
 
   pledgeConfirmBtn.onclick = async () => {
     if (!pendingRate) return;
-
-    if (!pledgeCheck.checked) {
-      alert("צריך לסמן שהסכמת להתחייבות כדי לעדכן דירוג.");
-      return;
-    }
+    if (!pledgeCheck.checked) return alert("צריך לסמן הסכמה כדי לעדכן דירוג.");
 
     const { roomId, value } = pendingRate;
-
     try {
       await setDoc(
         doc(db, "ratings", `${roomId}_${uid}`),
-        {
-          roomId,
-          uid,
-          value,
-          pledgeAccepted: true,
-          pledgeTextVersion: 1,
-          pledgedAt: Date.now()
-        },
-        { merge: true }
+        { roomId, uid, value, pledgeAccepted:true, pledgedAt: Date.now() },
+        { merge:true }
       );
-      closePledgeModal();
+      closePledge();
     } catch (e) {
       console.error(e);
       alert("שגיאה בדירוג: " + (e.code || e.message));
@@ -520,6 +504,7 @@
 
           const ref = doc(collection(db, "rooms"));
           batch.set(ref, { name, city, score });
+
           added++; batchCount++;
 
           if (batchCount >= 450) {
@@ -531,7 +516,7 @@
 
         if (batchCount > 0) await batch.commit();
 
-        let msg = `✅ נוספו ${added} חדרים (גיליון: ${sheetName})`;
+        let msg = `✅ נוספו ${added} חדרים`;
         if (skipped) msg += `\n⚠️ דולגו ${skipped} שורות לא תקינות.`;
         if (skipSamples.length) msg += `\nדוגמאות:\n- ${skipSamples.join("\n- ")}`;
 
@@ -542,6 +527,7 @@
         alert("שגיאה בייבוא: " + (err.code || err.message || err));
       }
     };
+
     reader.readAsBinaryString(file);
   };
 
@@ -551,5 +537,6 @@
     }[m]));
   }
 </script>
+
 </body>
 </html>
