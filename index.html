@@ -100,6 +100,9 @@
       padding:18px;
       z-index:10000;
     }
+    /* ✅ זה התיקון הקריטי */
+    .modalOverlay.hidden{ display:none !important; }
+
     .modal{
       width:min(720px, 100%);
       background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
@@ -177,16 +180,14 @@
 
 <!-- Rating pledge modal -->
 <div id="pledgeOverlay" class="modalOverlay hidden" role="dialog" aria-modal="true">
-  <div class="modal">
+  <div class="modal" id="pledgeModal">
     <h3 id="pledgeTitle">דירוג חדר</h3>
-    <p id="pledgeText">
-      לפני שמעדכנים את הדירוג, צריך לאשר:
-    </p>
+    <p id="pledgeText">לפני שמעדכנים את הדירוג, צריך לאשר:</p>
 
     <div class="checkboxRow">
       <input type="checkbox" id="pledgeCheck">
-      <label for="pledgeCheck" id="pledgeLabel">
-        אני מתחייב/ת שהייתי בחדר הזה במהלך החודש האחרון, ושאני מדרג/ת אותו לכל היותר פעם אחת (אפשר לשנות את הדירוג שלי, אבל לא לרשום כמה דירוגים שונים).
+      <label for="pledgeCheck">
+        אני מתחייב/ת שהייתי בחדר הזה במהלך החודש האחרון, ושאני מדרג/ת אותו לכל היותר פעם אחת (אפשר לעדכן את הדירוג שלי).
       </label>
     </div>
 
@@ -216,7 +217,7 @@
     appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
   };
 
-  // ✅ להשאיר את המייל שלך כאן
+  // ✅ להשאיר כמו אצלך
   const ADMIN_EMAIL = "sigalp@gmail.com";
 
   const app = initializeApp(firebaseConfig);
@@ -242,8 +243,8 @@
   const excelFile = document.getElementById("excelFile");
   const importBtn = document.getElementById("importBtn");
 
-  // modal dom
   const pledgeOverlay = document.getElementById("pledgeOverlay");
+  const pledgeModal = document.getElementById("pledgeModal");
   const pledgeTitle = document.getElementById("pledgeTitle");
   const pledgeCheck = document.getElementById("pledgeCheck");
   const pledgeCancelBtn = document.getElementById("pledgeCancelBtn");
@@ -296,71 +297,63 @@
 
   // ✅ SORT: descending by your score (10 top)
   function loadRooms() {
-    const qRooms = query(collection(db, "rooms")); // fetch all then sort client-side
-    onSnapshot(
-      qRooms,
-      (snap) => {
-        const rows = [];
-        snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
+    const qRooms = query(collection(db, "rooms"));
+    onSnapshot(qRooms, (snap) => {
+      const rows = [];
+      snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
 
-        rows.sort((a, b) => (Number(b.score ?? -999) - Number(a.score ?? -999)));
+      rows.sort((a, b) => (Number(b.score ?? -999) - Number(a.score ?? -999)));
 
-        roomsEl.innerHTML = "";
-        for (const r of rows) {
-          const tr = document.createElement("tr");
+      roomsEl.innerHTML = "";
+      for (const r of rows) {
+        const tr = document.createElement("tr");
 
-          tr.innerHTML = `
-            <td>${escapeHTML(r.name)}</td>
-            <td>${escapeHTML(r.city || "")}</td>
-            <td>${escapeHTML(String(r.score ?? ""))}</td>
-            <td id="avg-${r.id}">—</td>
-            <td id="cnt-${r.id}">0</td>
-            <td class="actions"></td>
-          `;
+        tr.innerHTML = `
+          <td>${escapeHTML(r.name)}</td>
+          <td>${escapeHTML(r.city || "")}</td>
+          <td>${escapeHTML(String(r.score ?? ""))}</td>
+          <td id="avg-${r.id}">—</td>
+          <td id="cnt-${r.id}">0</td>
+          <td class="actions"></td>
+        `;
 
-          const actions = tr.querySelector(".actions");
+        const actions = tr.querySelector(".actions");
 
-          const rateBtn = document.createElement("button");
-          rateBtn.textContent = "דרג";
-          rateBtn.className = "small";
-          rateBtn.onclick = () => startRateFlow(r.id, r.name);
-          actions.appendChild(rateBtn);
+        const rateBtn = document.createElement("button");
+        rateBtn.textContent = "דרג";
+        rateBtn.className = "small";
+        rateBtn.onclick = () => startRateFlow(r.id, r.name);
+        actions.appendChild(rateBtn);
 
-          if (isAdmin) {
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "ערוך";
-            editBtn.className = "small";
-            editBtn.onclick = () => {
-              editingId = r.id;
-              nameEl.value = r.name || "";
-              cityEl.value = r.city || "";
-              scoreEl.value = String(r.score ?? "");
-              formTitle.textContent = "עריכת חדר";
-              window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-            };
+        if (isAdmin) {
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "ערוך";
+          editBtn.className = "small";
+          editBtn.onclick = () => {
+            editingId = r.id;
+            nameEl.value = r.name || "";
+            cityEl.value = r.city || "";
+            scoreEl.value = String(r.score ?? "");
+            formTitle.textContent = "עריכת חדר";
+            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+          };
 
-            const delBtn = document.createElement("button");
-            delBtn.textContent = "מחק";
-            delBtn.className = "small danger";
-            delBtn.onclick = async () => {
-              if (!confirm(`למחוק את "${r.name}"?`)) return;
-              try { await deleteDoc(doc(db, "rooms", r.id)); }
-              catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
-            };
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "מחק";
+          delBtn.className = "small danger";
+          delBtn.onclick = async () => {
+            if (!confirm(`למחוק את "${r.name}"?`)) return;
+            try { await deleteDoc(doc(db, "rooms", r.id)); }
+            catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
+          };
 
-            actions.append(editBtn, delBtn);
-          }
-
-          roomsEl.appendChild(tr);
-          listenRatings(r.id);
+          actions.append(editBtn, delBtn);
         }
-      },
-      (err) => {
-        console.error("Rooms read error:", err);
-        alert("אי אפשר לקרוא חדרים (הרשאות Firestore): " + (err.code || err.message));
-        roomsEl.innerHTML = "";
+
+        roomsEl.appendChild(tr);
+        listenRatings(r.id);
       }
-    );
+    });
   }
 
   saveBtn.onclick = async () => {
@@ -400,13 +393,36 @@
     pendingRate = { roomId, value: v, roomName };
     pledgeTitle.textContent = `דירוג: ${roomName}`;
     pledgeCheck.checked = false;
+
+    openPledgeModal();
+  }
+
+  function openPledgeModal(){
     pledgeOverlay.classList.remove("hidden");
   }
 
-  pledgeCancelBtn.onclick = () => {
-    pendingRate = null;
+  function closePledgeModal(){
     pledgeOverlay.classList.add("hidden");
-  };
+    pendingRate = null;
+    pledgeCheck.checked = false;
+  }
+
+  pledgeCancelBtn.onclick = closePledgeModal;
+
+  // ✅ Close by clicking outside the modal
+  pledgeOverlay.addEventListener("click", (e) => {
+    if (e.target === pledgeOverlay) closePledgeModal();
+  });
+
+  // ✅ Prevent close when clicking inside modal
+  pledgeModal.addEventListener("click", (e) => e.stopPropagation());
+
+  // ✅ Close with ESC
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !pledgeOverlay.classList.contains("hidden")) {
+      closePledgeModal();
+    }
+  });
 
   pledgeConfirmBtn.onclick = async () => {
     if (!pendingRate) return;
@@ -419,7 +435,6 @@
     const { roomId, value } = pendingRate;
 
     try {
-      // one rating per user per room (doc id = roomId_uid)
       await setDoc(
         doc(db, "ratings", `${roomId}_${uid}`),
         {
@@ -432,8 +447,7 @@
         },
         { merge: true }
       );
-      pledgeOverlay.classList.add("hidden");
-      pendingRate = null;
+      closePledgeModal();
     } catch (e) {
       console.error(e);
       alert("שגיאה בדירוג: " + (e.code || e.message));
