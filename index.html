@@ -5,153 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>UNLOCKED</title>
 
-  <!-- Excel (SheetJS) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root{
-      --bg:#0b1020;
-      --card:#141c3a;
-      --line:#2b3566;
-      --accent:#8b5cf6;
-      --accent2:#22d3ee;
-      --text:#f8fafc;
-      --muted:#c7d2fe;
-      --good:#22c55e;
+      --bg:#0b1020; --line:#2b3566;
+      --accent:#8b5cf6; --accent2:#22d3ee;
+      --text:#f8fafc; --muted:#c7d2fe; --good:#22c55e;
       --danger:#ef4444;
     }
-
     body{
       margin:0;
-      font-family: system-ui,-apple-system,Segoe UI,Arial,sans-serif;
-      background: radial-gradient(1200px 650px at 10% -10%, #1e2a78, var(--bg));
+      font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+      background:radial-gradient(1200px 650px at 10% -10%, #1e2a78, var(--bg));
       color:var(--text);
       font-size:19px;
     }
-
-    header, main{
-      max-width:1200px;
-      margin:auto;
-      padding:24px;
-    }
-
-    header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding-top:28px;
-    }
-
-    h1{ margin:0; font-size:42px; letter-spacing:.5px; }
-    h2{ margin:0 0 12px; font-size:28px; }
-
+    header,main{max-width:1200px;margin:auto;padding:24px}
+    header{display:flex;justify-content:space-between;align-items:center;padding-top:28px}
+    h1{margin:0;font-size:42px}
+    h2{margin:0 0 12px;font-size:28px}
     .badge{
-      display:inline-block;
-      padding:6px 14px;
-      border-radius:999px;
-      background:#0b1020;
-      border:1px solid var(--line);
+      display:inline-block;padding:6px 14px;border-radius:999px;
+      background:#0b1020;border:1px solid var(--line);
     }
-    .ok{ color: var(--good); }
-
+    .ok{color:var(--good)}
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      padding: 26px;
-      margin-bottom: 28px;
-      box-shadow: 0 22px 60px rgba(0,0,0,.35);
+      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
+      border:1px solid var(--line); border-radius:22px;
+      padding:26px; margin-bottom:28px;
+      box-shadow:0 22px 60px rgba(0,0,0,.35);
     }
-
-    .row{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:780px){.row{grid-template-columns:1fr}}
+    input,button{
+      width:100%;padding:16px;margin:8px 0;border-radius:14px;
+      border:1px solid var(--line);background:#0b1020;color:var(--text);
+      font-size:18px;box-sizing:border-box;
     }
-    @media (max-width: 780px){
-      .row{ grid-template-columns: 1fr; }
-    }
-
-    input, button{
-      width:100%;
-      padding:16px;
-      margin:8px 0;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:#0b1020;
-      color:var(--text);
-      font-size:18px;
-      box-sizing:border-box;
-    }
-
-    input[type="file"]{
-      padding:12px;
-    }
-
+    input[type="file"]{padding:12px}
     button{
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border:none;
-      font-weight:800;
-      cursor:pointer;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      border:none;font-weight:800;cursor:pointer;
     }
+    button.small{width:auto;padding:8px 14px;font-size:15px;border-radius:12px}
+    button.danger{background:var(--danger)}
+    table{width:100%;border-collapse:collapse;font-size:18px}
+    th,td{padding:16px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+    th{color:var(--muted);font-weight:700}
+    tr:hover{background:rgba(255,255,255,.04)}
+    .hidden{display:none}
+    .muted{color:var(--muted);font-size:14px;line-height:1.6}
+    hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 
-    button.small{
-      width:auto;
-      padding:8px 14px;
-      font-size:15px;
-      border-radius:12px;
-    }
-    button.danger{
-      background: var(--danger);
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:18px;
-    }
-    th, td{
-      padding:16px;
-      border-bottom:1px solid var(--line);
-      text-align:right;
-      vertical-align:middle;
-    }
-    th{ color: var(--muted); font-weight:700; }
-    tr:hover{ background: rgba(255,255,255,.04); }
-
-    .hidden{ display:none; }
-    .muted{ color: var(--muted); font-size:14px; line-height:1.6; }
-
-    hr{
-      border:0;
-      border-top:1px solid var(--line);
-      margin:22px 0;
-    }
-
-    /* 🥷 secret admin dot */
     #secretLogin{
-      position:fixed;
-      bottom:6px;
-      left:6px;
-      width:10px;
-      height:10px;
-      border-radius:50%;
-      background: rgba(255,255,255,.15);
-      cursor:pointer;
-      z-index:9999;
+      position:fixed;bottom:6px;left:6px;width:10px;height:10px;border-radius:50%;
+      background:rgba(255,255,255,.15);cursor:pointer;z-index:9999;
     }
-    #secretLogin:hover{ background: rgba(139,92,246,.9); }
-
-    .pill{
-      display:inline-block;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:#0b1020;
-      font-size:14px;
-      color:var(--muted);
-      margin-inline-end:8px;
-    }
+    #secretLogin:hover{background:rgba(139,92,246,.9)}
   </style>
 </head>
 
@@ -162,7 +73,6 @@
 </header>
 
 <main>
-  <!-- LOGIN (opens only via secret dot) -->
   <section class="card hidden" id="loginCard">
     <h2>התחברות מנהלת</h2>
     <div class="row">
@@ -170,30 +80,22 @@
       <input id="password" type="password" placeholder="סיסמה">
     </div>
     <button id="loginBtn">התחברי</button>
-    <p class="muted">
-      הטופס הזה נפתח רק מהנקודה הסודית בפינה. אחרי רענון דף חוזרים למצב אורח.
-    </p>
+    <p class="muted">הטופס נפתח רק מהנקודה הסודית. אחרי רענון חוזרים לאורח.</p>
   </section>
 
-  <!-- ROOMS TABLE (top) -->
   <section class="card">
     <h2>חדרים</h2>
     <table>
       <thead>
         <tr>
-          <th>שם</th>
-          <th>עיר</th>
-          <th>הציון שלי</th>
-          <th>ממוצע קהילה</th>
-          <th>דירגו</th>
-          <th>פעולות</th>
+          <th>שם</th><th>עיר</th><th>הציון שלי</th>
+          <th>ממוצע קהילה</th><th>דירגו</th><th>פעולות</th>
         </tr>
       </thead>
       <tbody id="rooms"></tbody>
     </table>
   </section>
 
-  <!-- ADMIN PANEL -->
   <section class="card hidden" id="adminPanel">
     <h2 id="formTitle">הוספת חדר</h2>
 
@@ -208,42 +110,24 @@
     <hr>
 
     <h2>📥 העלאת קובץ Excel</h2>
-    <div class="muted">
-      הכותרות בשורה הראשונה צריכות להיות: <span class="pill">name</span><span class="pill">city</span><span class="pill">score</span>
-      <br/>וגם אם יש עברית: <span class="pill">שם</span><span class="pill">עיר</span><span class="pill">ציון</span זה יעבוד.
-    </div>
+    <p class="muted">כותרות נתמכות: name/city/score או שם/עיר/ציון.</p>
     <input type="file" id="excelFile" accept=".xlsx">
     <button id="importBtn">ייבוא חדרים</button>
   </section>
 </main>
 
-<!-- 🥷 secret dot -->
 <div id="secretLogin" title="admin"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
-    getAuth,
-    signInAnonymously,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
+    getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
-    getFirestore,
-    collection,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    doc,
-    onSnapshot,
-    query,
-    where,
-    setDoc,
-    writeBatch
+    getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+    onSnapshot, query, where, setDoc, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  /* 🔥 Firebase config */
   const firebaseConfig = {
     apiKey: "AIzaSyCuaw5E-SJM3ojbw6vhj4gw6MSjId4wosw",
     authDomain: "unlocked-67483.firebaseapp.com",
@@ -253,46 +137,41 @@
     appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
   };
 
-  /* ✅ שימי כאן את המייל שאיתו יצרת את משתמשת המנהלת ב-Firebase Authentication */
+  // ✅ לשים כאן את המייל של המנהלת (כמו ב-Firebase Authentication)
   const ADMIN_EMAIL = "sigalp@gmail.com";
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // DOM
-  const statusEl   = document.getElementById("status");
-  const roomsEl    = document.getElementById("rooms");
+  const statusEl = document.getElementById("status");
+  const roomsEl = document.getElementById("rooms");
   const adminPanel = document.getElementById("adminPanel");
-  const loginCard  = document.getElementById("loginCard");
-  const secretDot  = document.getElementById("secretLogin");
+  const loginCard = document.getElementById("loginCard");
+  const secretDot = document.getElementById("secretLogin");
 
-  const emailEl    = document.getElementById("email");
-  const passEl     = document.getElementById("password");
-  const loginBtn   = document.getElementById("loginBtn");
+  const emailEl = document.getElementById("email");
+  const passEl = document.getElementById("password");
+  const loginBtn = document.getElementById("loginBtn");
 
-  const nameEl     = document.getElementById("name");
-  const cityEl     = document.getElementById("city");
-  const scoreEl    = document.getElementById("score");
-  const saveBtn    = document.getElementById("saveBtn");
-  const formTitle  = document.getElementById("formTitle");
+  const nameEl = document.getElementById("name");
+  const cityEl = document.getElementById("city");
+  const scoreEl = document.getElementById("score");
+  const saveBtn = document.getElementById("saveBtn");
+  const formTitle = document.getElementById("formTitle");
 
-  const excelFile  = document.getElementById("excelFile");
-  const importBtn  = document.getElementById("importBtn");
+  const excelFile = document.getElementById("excelFile");
+  const importBtn = document.getElementById("importBtn");
 
   let uid = null;
   let isAdmin = false;
   let editingId = null;
 
-  // Always start as guest (so admin is ONLY via secret button each time)
+  // תמיד מתחילים כאורח (מנהלת רק דרך הנקודה בכל רענון)
   try { await signOut(auth); } catch {}
 
-  // Secret dot toggles login card
-  secretDot.onclick = () => {
-    loginCard.classList.toggle("hidden");
-  };
+  secretDot.onclick = () => loginCard.classList.toggle("hidden");
 
-  // Auth state
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       uid = null;
@@ -305,8 +184,10 @@
     }
 
     uid = user.uid;
-    const email = (user.email || "").toLowerCase();
-    isAdmin = !!ADMIN_EMAIL && email === ADMIN_EMAIL.toLowerCase();
+
+    const currentEmail = (user.email || "").toLowerCase().trim();
+    const adminEmail = (ADMIN_EMAIL || "").toLowerCase().trim();
+    isAdmin = adminEmail !== "" && currentEmail === adminEmail;
 
     statusEl.textContent = isAdmin ? "מנהלת" : "אורח";
     statusEl.className = isAdmin ? "ok" : "";
@@ -315,7 +196,6 @@
     loadRooms();
   });
 
-  // Admin login
   loginBtn.onclick = async () => {
     try {
       await signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value);
@@ -326,68 +206,70 @@
     }
   };
 
-  // Rooms list
   function loadRooms() {
-    onSnapshot(collection(db, "rooms"), (snap) => {
-      roomsEl.innerHTML = "";
+    onSnapshot(
+      collection(db, "rooms"),
+      (snap) => {
+        roomsEl.innerHTML = "";
+        snap.forEach((d) => {
+          const r = d.data();
+          const tr = document.createElement("tr");
 
-      snap.forEach((d) => {
-        const r = d.data();
-        const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHTML(r.name)}</td>
+            <td>${escapeHTML(r.city || "")}</td>
+            <td>${escapeHTML(String(r.score ?? ""))}</td>
+            <td id="avg-${d.id}">—</td>
+            <td id="cnt-${d.id}">0</td>
+            <td class="actions"></td>
+          `;
 
-        tr.innerHTML = `
-          <td>${escapeHTML(r.name)}</td>
-          <td>${escapeHTML(r.city || "")}</td>
-          <td>${escapeHTML(String(r.score ?? ""))}</td>
-          <td id="avg-${d.id}">—</td>
-          <td id="cnt-${d.id}">0</td>
-          <td class="actions"></td>
-        `;
+          const actions = tr.querySelector(".actions");
 
-        const actions = tr.querySelector(".actions");
+          const rateBtn = document.createElement("button");
+          rateBtn.textContent = "דרג";
+          rateBtn.className = "small";
+          rateBtn.onclick = () => rateRoom(d.id);
+          actions.appendChild(rateBtn);
 
-        const rateBtn = document.createElement("button");
-        rateBtn.textContent = "דרג";
-        rateBtn.className = "small";
-        rateBtn.onclick = () => rateRoom(d.id);
-        actions.appendChild(rateBtn);
+          if (isAdmin) {
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "ערוך";
+            editBtn.className = "small";
+            editBtn.onclick = () => {
+              editingId = d.id;
+              nameEl.value = r.name || "";
+              cityEl.value = r.city || "";
+              scoreEl.value = String(r.score ?? "");
+              formTitle.textContent = "עריכת חדר";
+              window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+            };
 
-        if (isAdmin) {
-          const editBtn = document.createElement("button");
-          editBtn.textContent = "ערוך";
-          editBtn.className = "small";
-          editBtn.onclick = () => {
-            editingId = d.id;
-            nameEl.value = r.name || "";
-            cityEl.value = r.city || "";
-            scoreEl.value = String(r.score ?? "");
-            formTitle.textContent = "עריכת חדר";
-            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-          };
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "מחק";
+            delBtn.className = "small danger";
+            delBtn.onclick = async () => {
+              if (!confirm(`למחוק את "${r.name}"?`)) return;
+              try { await deleteDoc(doc(db, "rooms", d.id)); }
+              catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
+            };
 
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "מחק";
-          delBtn.className = "small danger";
-          delBtn.onclick = async () => {
-            if (!confirm(`למחוק את "${r.name}"?`)) return;
-            try {
-              await deleteDoc(doc(db, "rooms", d.id));
-            } catch (e) {
-              console.error(e);
-              alert("שגיאה במחיקה: " + (e.code || e.message));
-            }
-          };
+            actions.append(editBtn, delBtn);
+          }
 
-          actions.append(editBtn, delBtn);
-        }
-
-        roomsEl.appendChild(tr);
-        listenRatings(d.id);
-      });
-    });
+          roomsEl.appendChild(tr);
+          listenRatings(d.id);
+        });
+      },
+      (err) => {
+        // ✅ אם הרשאות הקריאה חוסמות – תראי את זה
+        console.error("Rooms read error:", err);
+        alert("אי אפשר לקרוא חדרים (כנראה הרשאות Firestore): " + (err.code || err.message));
+        roomsEl.innerHTML = "";
+      }
+    );
   }
 
-  // Save room (admin only)
   saveBtn.onclick = async () => {
     if (!isAdmin) return alert("אין הרשאה");
 
@@ -409,10 +291,7 @@
       } else {
         await addDoc(collection(db, "rooms"), { name, city, score: s });
       }
-
-      nameEl.value = "";
-      cityEl.value = "";
-      scoreEl.value = "";
+      nameEl.value = ""; cityEl.value = ""; scoreEl.value = "";
       alert("נשמר ✅");
     } catch (e) {
       console.error(e);
@@ -420,7 +299,6 @@
     }
   };
 
-  // Ratings
   async function rateRoom(roomId) {
     const v = parseInt(prompt("ציון 1–10"), 10);
     if (Number.isNaN(v) || v < 1 || v > 10) return;
@@ -443,7 +321,6 @@
       let sum = 0;
       s.forEach(d => sum += Number(d.data().value || 0));
       const avg = s.size ? (sum / s.size).toFixed(1) : "—";
-
       const avgEl = document.getElementById(`avg-${roomId}`);
       const cntEl = document.getElementById(`cnt-${roomId}`);
       if (avgEl) avgEl.textContent = avg;
@@ -451,7 +328,6 @@
     });
   }
 
-  // Excel import (admin only) - robust, batches, and reports skips
   importBtn.onclick = () => {
     if (!isAdmin) return alert("אין הרשאה");
 
@@ -466,24 +342,19 @@
         const sheet = wb.Sheets[sheetName];
 
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-        if (data.length < 2) {
-          alert("הקובץ ריק או שיש רק כותרות בלי נתונים");
-          return;
-        }
+        if (data.length < 2) return alert("הקובץ ריק או שיש רק כותרות בלי נתונים");
 
         const headers = data[0].map(h => String(h).trim().toLowerCase());
-
         const col = (names, fallback) => {
           const idx = headers.findIndex(h => names.includes(h));
           return idx >= 0 ? idx : fallback;
         };
 
-        const colName  = col(["name", "שם"], 0);
-        const colCity  = col(["city", "עיר"], 1);
-        const colScore = col(["score", "ציון", "הציון שלי"], 2);
+        const colName  = col(["name","שם"], 0);
+        const colCity  = col(["city","עיר"], 1);
+        const colScore = col(["score","ציון","הציון שלי"], 2);
 
-        let added = 0;
-        let skipped = 0;
+        let added = 0, skipped = 0;
         const skipSamples = [];
 
         let batch = writeBatch(db);
@@ -498,22 +369,17 @@
           const score = parseInt(rawScore, 10);
 
           if (!name) {
-            skipped++;
-            if (skipSamples.length < 5) skipSamples.push(`שורה ${i + 1}: חסר name`);
+            skipped++; if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: חסר name`);
             continue;
           }
-
           if (Number.isNaN(score) || score < 1 || score > 10) {
-            skipped++;
-            if (skipSamples.length < 5) skipSamples.push(`שורה ${i + 1}: score לא תקין (${rawScore})`);
+            skipped++; if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: score לא תקין (${rawScore})`);
             continue;
           }
 
           const ref = doc(collection(db, "rooms"));
           batch.set(ref, { name, city, score });
-
-          added++;
-          batchCount++;
+          added++; batchCount++;
 
           if (batchCount >= 450) {
             await batch.commit();
@@ -530,13 +396,11 @@
 
         alert(msg);
         excelFile.value = "";
-
       } catch (err) {
         console.error(err);
         alert("שגיאה בייבוא: " + (err.code || err.message || err));
       }
     };
-
     reader.readAsBinaryString(file);
   };
 
@@ -546,6 +410,5 @@
     }[m]));
   }
 </script>
-
 </body>
 </html>
