@@ -92,7 +92,7 @@ tr:hover{background:rgba(255,255,255,.04)}
 .hidden{display:none}
 .ok{color:var(--good)}
 
-/* 🥷 secret admin button */
+/* 🥷 כפתור סודי */
 #secretLogin{
   position:fixed;
   bottom:6px;
@@ -114,12 +114,12 @@ tr:hover{background:rgba(255,255,255,.04)}
 
 <header>
   <h1>🔓 UNLOCKED</h1>
-  <span class="badge">סטטוס: <span id="status">מתחבר…</span></span>
+  <span class="badge">סטטוס: <span id="status">מבקר</span></span>
 </header>
 
 <main>
 
-<!-- LOGIN (hidden by default) -->
+<!-- LOGIN (נפתח רק בלחיצה סודית) -->
 <section class="card hidden" id="loginCard">
   <h2>התחברות מנהלת</h2>
   <input id="email" placeholder="מייל">
@@ -127,7 +127,7 @@ tr:hover{background:rgba(255,255,255,.04)}
   <button onclick="login()">התחברי</button>
 </section>
 
-<!-- ROOMS TABLE -->
+<!-- ROOMS -->
 <section class="card">
   <h2>חדרים</h2>
   <table>
@@ -156,22 +156,31 @@ tr:hover{background:rgba(255,255,255,.04)}
 
 </main>
 
-<!-- 🥷 secret dot -->
+<!-- 🥷 נקודת נינג׳ה -->
 <div id="secretLogin" title="admin"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
-  getAuth, signInAnonymously,
+  getAuth,
+  signInAnonymously,
   signInWithEmailAndPassword,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, updateDoc, deleteDoc,
-  doc, onSnapshot, query, where, setDoc
+  getFirestore,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  where,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-/* 🔥 Firebase config */
+/* 🔥 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyCuaw5E-SJM3ojbw6vhj4gw6MSjId4wosw",
   authDomain: "unlocked-67483.firebaseapp.com",
@@ -181,7 +190,7 @@ const firebaseConfig = {
   appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
 };
 
-/* 👩‍💼 ADMIN UID */
+/* 👩‍💼 UID שלך */
 const ADMIN_UID = "1Dar4ZKBqkdxTgL07krIwFodvoq2";
 
 const app = initializeApp(firebaseConfig);
@@ -193,33 +202,39 @@ const roomsEl = document.getElementById("rooms");
 const adminPanel = document.getElementById("adminPanel");
 const loginCard = document.getElementById("loginCard");
 
-let uid=null, isAdmin=false, editingId=null;
+let uid = null;
+let isAdmin = false;
+let editingId = null;
 
 /* ---------- AUTH ---------- */
-onAuthStateChanged(auth, user=>{
-  if(user){
-    uid=user.uid;
-    isAdmin = uid===ADMIN_UID;
-    statusEl.textContent = isAdmin ? "מנהלת" : "מחובר";
-    statusEl.className="ok";
-    adminPanel.classList.toggle("hidden",!isAdmin);
+onAuthStateChanged(auth, user => {
+  if (user) {
+    uid = user.uid;
+    isAdmin = user.uid === ADMIN_UID;
+
+    statusEl.textContent = isAdmin ? "מנהלת" : "מבקר";
+    statusEl.className = isAdmin ? "ok" : "";
+
+    adminPanel.classList.toggle("hidden", !isAdmin);
     loadRooms();
-  }else{
+  } else {
     signInAnonymously(auth);
   }
 });
 
-/* secret toggle */
-document.getElementById("secretLogin").onclick=()=>{
+/* 🥷 פתיחת טופס התחברות */
+document.getElementById("secretLogin").onclick = () => {
   loginCard.classList.toggle("hidden");
 };
 
-window.login = async ()=>{
-  try{
-    await signInWithEmailAndPassword(auth,email.value,password.value);
+/* התחברות מנהלת */
+window.login = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, email.value, password.value);
     loginCard.classList.add("hidden");
-  }catch{
+  } catch (e) {
     alert("שגיאת התחברות");
+    console.error(e);
   }
 };
 
@@ -230,6 +245,7 @@ function loadRooms(){
     snap.forEach(d=>{
       const r=d.data();
       const tr=document.createElement("tr");
+
       tr.innerHTML=`
         <td>${r.name}</td>
         <td>${r.city||""}</td>
@@ -238,30 +254,33 @@ function loadRooms(){
         <td id="cnt-${d.id}">0</td>
         <td class="actions"></td>
       `;
-      const actions=tr.querySelector(".actions");
 
-      const rateBtn=document.createElement("button");
-      rateBtn.textContent="דרג";
-      rateBtn.className="small";
-      rateBtn.onclick=()=>rate(d.id);
+      const actions = tr.querySelector(".actions");
+
+      const rateBtn = document.createElement("button");
+      rateBtn.textContent = "דרג";
+      rateBtn.className = "small";
+      rateBtn.onclick = () => rate(d.id);
       actions.appendChild(rateBtn);
 
-      if(isAdmin){
-        const edit=document.createElement("button");
-        edit.textContent="ערוך";
-        edit.className="small";
-        edit.onclick=()=>{
-          editingId=d.id;
-          name.value=r.name;
-          city.value=r.city;
-          score.value=r.score;
-          formTitle.textContent="עריכת חדר";
+      if (isAdmin) {
+        const edit = document.createElement("button");
+        edit.textContent = "ערוך";
+        edit.className = "small";
+        edit.onclick = () => {
+          editingId = d.id;
+          name.value = r.name;
+          city.value = r.city;
+          score.value = r.score;
+          formTitle.textContent = "עריכת חדר";
         };
-        const del=document.createElement("button");
-        del.textContent="מחק";
-        del.className="small danger";
-        del.onclick=()=>deleteDoc(doc(db,"rooms",d.id));
-        actions.append(edit,del);
+
+        const del = document.createElement("button");
+        del.textContent = "מחק";
+        del.className = "small danger";
+        del.onclick = () => deleteDoc(doc(db,"rooms",d.id));
+
+        actions.append(edit, del);
       }
 
       roomsEl.appendChild(tr);
@@ -271,55 +290,53 @@ function loadRooms(){
 }
 
 /* ---------- SAVE ROOM ---------- */
-window.saveRoom = async ()=>{
-  if(!isAdmin) return;
+window.saveRoom = async () => {
+  if (!isAdmin) return;
 
-  const raw = score.value.trim();
-  const s = parseInt(raw,10);
-
-  if(!name.value.trim())
-    return alert("חסר שם חדר");
-  if(Number.isNaN(s)||s<1||s>10)
+  const s = parseInt(score.value.trim(), 10);
+  if (!name.value.trim()) return alert("חסר שם חדר");
+  if (Number.isNaN(s) || s < 1 || s > 10)
     return alert("ציון חייב להיות מספר שלם בין 1 ל־10");
 
-  if(editingId){
-    await updateDoc(doc(db,"rooms",editingId),{
-      name:name.value.trim(),
-      city:city.value.trim(),
-      score:s
+  if (editingId) {
+    await updateDoc(doc(db,"rooms",editingId), {
+      name: name.value.trim(),
+      city: city.value.trim(),
+      score: s
     });
-    editingId=null;
-    formTitle.textContent="הוספת חדר";
-  }else{
-    await addDoc(collection(db,"rooms"),{
-      name:name.value.trim(),
-      city:city.value.trim(),
-      score:s
+    editingId = null;
+    formTitle.textContent = "הוספת חדר";
+  } else {
+    await addDoc(collection(db,"rooms"), {
+      name: name.value.trim(),
+      city: city.value.trim(),
+      score: s
     });
   }
-  name.value=city.value=score.value="";
+
+  name.value = city.value = score.value = "";
 };
 
 /* ---------- RATINGS ---------- */
-window.rate = async(roomId)=>{
-  const v=parseInt(prompt("ציון 1–10"),10);
-  if(Number.isNaN(v)||v<1||v>10) return;
+window.rate = async roomId => {
+  const v = parseInt(prompt("ציון 1–10"), 10);
+  if (Number.isNaN(v) || v < 1 || v > 10) return;
 
   await setDoc(
     doc(db,"ratings",`${roomId}_${uid}`),
-    {roomId,uid,value:v},
-    {merge:true}
+    { roomId, uid, value: v },
+    { merge: true }
   );
 };
 
 function listenRatings(roomId){
-  const q=query(collection(db,"ratings"),where("roomId","==",roomId));
-  onSnapshot(q,s=>{
-    let sum=0;
-    s.forEach(d=>sum+=d.data().value);
+  const q = query(collection(db,"ratings"), where("roomId","==",roomId));
+  onSnapshot(q, s => {
+    let sum = 0;
+    s.forEach(d => sum += d.data().value);
     document.getElementById(`avg-${roomId}`).textContent =
-      s.size?(sum/s.size).toFixed(1):"—";
-    document.getElementById(`cnt-${roomId}`).textContent=s.size;
+      s.size ? (sum / s.size).toFixed(1) : "—";
+    document.getElementById(`cnt-${roomId}`).textContent = s.size;
   });
 }
 </script>
