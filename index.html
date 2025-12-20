@@ -18,7 +18,7 @@
 }
 body{
   margin:0;
-  font-family: system-ui,-apple-system,Segoe UI,Arial;
+  font-family:system-ui,-apple-system,Segoe UI,Arial;
   background:radial-gradient(1200px 600px at 10% -10%,#1e2a78,var(--bg));
   color:var(--text);
   font-size:19px;
@@ -31,11 +31,7 @@ header{
   max-width:1200px;
   margin:auto;
 }
-h1{
-  margin:0;
-  font-size:42px;
-  letter-spacing:1px;
-}
+h1{margin:0;font-size:42px}
 main{
   max-width:1200px;
   margin:auto;
@@ -49,10 +45,7 @@ main{
   margin-bottom:28px;
   box-shadow:0 20px 50px rgba(0,0,0,.35);
 }
-h2{
-  margin-top:0;
-  font-size:28px;
-}
+h2{margin-top:0;font-size:28px}
 input,button{
   width:100%;
   padding:16px;
@@ -72,6 +65,7 @@ button{
 button.small{
   padding:8px 14px;
   font-size:15px;
+  width:auto;
 }
 button.danger{
   background:#ef4444;
@@ -85,12 +79,8 @@ th,td{
   border-bottom:1px solid var(--line);
   text-align:right;
 }
-th{
-  color:var(--muted);
-}
-tr:hover{
-  background:rgba(255,255,255,.04);
-}
+th{color:var(--muted)}
+tr:hover{background:rgba(255,255,255,.04)}
 .badge{
   display:inline-block;
   padding:6px 14px;
@@ -98,12 +88,25 @@ tr:hover{
   background:#0b1020;
   border:1px solid var(--line);
 }
-.actions button{
-  width:auto;
-  margin-left:6px;
-}
-.ok{color:var(--good)}
+.actions button{margin-left:6px}
 .hidden{display:none}
+.ok{color:var(--good)}
+
+/* 🥷 secret admin button */
+#secretLogin{
+  position:fixed;
+  bottom:6px;
+  left:6px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:rgba(255,255,255,.15);
+  cursor:pointer;
+  z-index:9999;
+}
+#secretLogin:hover{
+  background:rgba(139,92,246,.9);
+}
 </style>
 </head>
 
@@ -116,15 +119,15 @@ tr:hover{
 
 <main>
 
-<!-- LOGIN -->
-<section class="card" id="loginCard">
+<!-- LOGIN (hidden by default) -->
+<section class="card hidden" id="loginCard">
   <h2>התחברות מנהלת</h2>
   <input id="email" placeholder="מייל">
   <input id="password" type="password" placeholder="סיסמה">
   <button onclick="login()">התחברי</button>
 </section>
 
-<!-- ROOMS -->
+<!-- ROOMS TABLE -->
 <section class="card">
   <h2>חדרים</h2>
   <table>
@@ -142,7 +145,7 @@ tr:hover{
   </table>
 </section>
 
-<!-- ADMIN -->
+<!-- ADMIN PANEL -->
 <section class="card hidden" id="adminPanel">
   <h2 id="formTitle">הוספת חדר</h2>
   <input id="name" placeholder="שם החדר">
@@ -153,6 +156,9 @@ tr:hover{
 
 </main>
 
+<!-- 🥷 secret dot -->
+<div id="secretLogin" title="admin"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -162,9 +168,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, updateDoc, deleteDoc,
-  doc, onSnapshot, query, where
+  doc, onSnapshot, query, where, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+/* 🔥 Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyCuaw5E-SJM3ojbw6vhj4gw6MSjId4wosw",
   authDomain: "unlocked-67483.firebaseapp.com",
@@ -174,6 +181,7 @@ const firebaseConfig = {
   appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
 };
 
+/* 👩‍💼 ADMIN UID */
 const ADMIN_UID = "1Dar4ZKBqkdxTgL07krIwFodvoq2";
 
 const app = initializeApp(firebaseConfig);
@@ -181,38 +189,41 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const statusEl = document.getElementById("status");
+const roomsEl = document.getElementById("rooms");
 const adminPanel = document.getElementById("adminPanel");
 const loginCard = document.getElementById("loginCard");
-const roomsEl = document.getElementById("rooms");
 
 let uid=null, isAdmin=false, editingId=null;
 
+/* ---------- AUTH ---------- */
 onAuthStateChanged(auth, user=>{
   if(user){
     uid=user.uid;
-    isAdmin=user.uid===ADMIN_UID;
-    statusEl.textContent=isAdmin?"מנהלת":"מחובר";
+    isAdmin = uid===ADMIN_UID;
+    statusEl.textContent = isAdmin ? "מנהלת" : "מחובר";
     statusEl.className="ok";
     adminPanel.classList.toggle("hidden",!isAdmin);
-    loginCard.classList.toggle("hidden",isAdmin);
     loadRooms();
   }else{
     signInAnonymously(auth);
   }
 });
 
+/* secret toggle */
+document.getElementById("secretLogin").onclick=()=>{
+  loginCard.classList.toggle("hidden");
+};
+
 window.login = async ()=>{
   try{
-    await signInWithEmailAndPassword(
-      auth,
-      email.value,
-      password.value
-    );
+    await signInWithEmailAndPassword(auth,email.value,password.value);
+    loginCard.classList.add("hidden");
   }catch{
     alert("שגיאת התחברות");
   }
 };
 
+/* ---------- ROOMS ---------- */
 function loadRooms(){
   onSnapshot(collection(db,"rooms"), snap=>{
     roomsEl.innerHTML="";
@@ -228,6 +239,7 @@ function loadRooms(){
         <td class="actions"></td>
       `;
       const actions=tr.querySelector(".actions");
+
       const rateBtn=document.createElement("button");
       rateBtn.textContent="דרג";
       rateBtn.className="small";
@@ -258,37 +270,46 @@ function loadRooms(){
   });
 }
 
-window.saveRoom=async()=>{
+/* ---------- SAVE ROOM ---------- */
+window.saveRoom = async ()=>{
   if(!isAdmin) return;
-  const s=Number(score.value);
-  if(!name.value||!Number.isInteger(s)||s<1||s>10)
-    return alert("ציון 1–10 בלבד");
+
+  const raw = score.value.trim();
+  const s = parseInt(raw,10);
+
+  if(!name.value.trim())
+    return alert("חסר שם חדר");
+  if(Number.isNaN(s)||s<1||s>10)
+    return alert("ציון חייב להיות מספר שלם בין 1 ל־10");
 
   if(editingId){
     await updateDoc(doc(db,"rooms",editingId),{
-      name:name.value,
-      city:city.value,
+      name:name.value.trim(),
+      city:city.value.trim(),
       score:s
     });
     editingId=null;
     formTitle.textContent="הוספת חדר";
   }else{
     await addDoc(collection(db,"rooms"),{
-      name:name.value,
-      city:city.value,
+      name:name.value.trim(),
+      city:city.value.trim(),
       score:s
     });
   }
   name.value=city.value=score.value="";
 };
 
-window.rate=async(roomId)=>{
-  const v=Number(prompt("ציון 1–10"));
-  if(!Number.isInteger(v)||v<1||v>10) return;
-  await updateDoc(
+/* ---------- RATINGS ---------- */
+window.rate = async(roomId)=>{
+  const v=parseInt(prompt("ציון 1–10"),10);
+  if(Number.isNaN(v)||v<1||v>10) return;
+
+  await setDoc(
     doc(db,"ratings",`${roomId}_${uid}`),
-    {roomId,uid,value:v}
-  ).catch(()=>addDoc(collection(db,"ratings"),{roomId,uid,value:v}));
+    {roomId,uid,value:v},
+    {merge:true}
+  );
 };
 
 function listenRatings(roomId){
@@ -296,7 +317,7 @@ function listenRatings(roomId){
   onSnapshot(q,s=>{
     let sum=0;
     s.forEach(d=>sum+=d.data().value);
-    document.getElementById(`avg-${roomId}`).textContent=
+    document.getElementById(`avg-${roomId}`).textContent =
       s.size?(sum/s.size).toFixed(1):"—";
     document.getElementById(`cnt-${roomId}`).textContent=s.size;
   });
