@@ -16,53 +16,110 @@
     }
     body{
       margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;
-      background:radial-gradient(1200px 650px at 10% -10%, #1e2a78, var(--bg));
+      font-family: system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+      background: radial-gradient(1200px 650px at 10% -10%, #1e2a78, var(--bg));
       color:var(--text);
       font-size:19px;
     }
-    header,main{max-width:1200px;margin:auto;padding:24px}
+    header, main{max-width:1200px;margin:auto;padding:24px}
     header{display:flex;justify-content:space-between;align-items:center;padding-top:28px}
     h1{margin:0;font-size:42px}
     h2{margin:0 0 12px;font-size:28px}
+
     .badge{
-      display:inline-block;padding:6px 14px;border-radius:999px;
-      background:#0b1020;border:1px solid var(--line);
+      display:inline-block;
+      padding:6px 14px;
+      border-radius:999px;
+      background:#0b1020;
+      border:1px solid var(--line);
     }
     .ok{color:var(--good)}
+
     .card{
-      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
-      border:1px solid var(--line); border-radius:22px;
-      padding:26px; margin-bottom:28px;
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 26px;
+      margin-bottom: 28px;
       box-shadow:0 22px 60px rgba(0,0,0,.35);
     }
+
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media(max-width:780px){.row{grid-template-columns:1fr}}
+    @media (max-width:780px){.row{grid-template-columns:1fr}}
+
     input,button{
-      width:100%;padding:16px;margin:8px 0;border-radius:14px;
-      border:1px solid var(--line);background:#0b1020;color:var(--text);
-      font-size:18px;box-sizing:border-box;
+      width:100%;
+      padding:16px;
+      margin:8px 0;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#0b1020;
+      color:var(--text);
+      font-size:18px;
+      box-sizing:border-box;
     }
     input[type="file"]{padding:12px}
     button{
-      background:linear-gradient(90deg,var(--accent),var(--accent2));
-      border:none;font-weight:800;cursor:pointer;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border:none;
+      font-weight:800;
+      cursor:pointer;
     }
-    button.small{width:auto;padding:8px 14px;font-size:15px;border-radius:12px}
+    button.small{
+      width:auto;
+      padding:8px 14px;
+      font-size:15px;
+      border-radius:12px;
+      margin-left:6px;
+    }
     button.danger{background:var(--danger)}
+
     table{width:100%;border-collapse:collapse;font-size:18px}
     th,td{padding:16px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
     th{color:var(--muted);font-weight:700}
     tr:hover{background:rgba(255,255,255,.04)}
+
     .hidden{display:none}
     .muted{color:var(--muted);font-size:14px;line-height:1.6}
     hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 
+    /* 🥷 secret admin dot */
     #secretLogin{
       position:fixed;bottom:6px;left:6px;width:10px;height:10px;border-radius:50%;
-      background:rgba(255,255,255,.15);cursor:pointer;z-index:9999;
+      background: rgba(255,255,255,.15);cursor:pointer;z-index:9999;
     }
-    #secretLogin:hover{background:rgba(139,92,246,.9)}
+    #secretLogin:hover{background: rgba(139,92,246,.9)}
+
+    /* modal */
+    .modalOverlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:10000;
+    }
+    .modal{
+      width:min(720px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:22px;
+      box-shadow:0 22px 60px rgba(0,0,0,.55);
+    }
+    .modal h3{margin:0 0 10px; font-size:24px}
+    .modal p{margin:10px 0; color:var(--muted); line-height:1.6}
+    .modalActions{display:flex; gap:10px; margin-top:14px}
+    .modalActions button{flex:1}
+    .checkboxRow{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:12px; border:1px solid var(--line); border-radius:14px;
+      background:#0b1020;
+      margin-top:10px;
+    }
+    .checkboxRow input{width:auto; margin-top:4px}
+    .checkboxRow label{font-size:16px; color:var(--text)}
   </style>
 </head>
 
@@ -84,7 +141,7 @@
   </section>
 
   <section class="card">
-    <h2>חדרים</h2>
+    <h2>חדרים (ממויין לפי הציון שלי)</h2>
     <table>
       <thead>
         <tr>
@@ -118,6 +175,28 @@
 
 <div id="secretLogin" title="admin"></div>
 
+<!-- Rating pledge modal -->
+<div id="pledgeOverlay" class="modalOverlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3 id="pledgeTitle">דירוג חדר</h3>
+    <p id="pledgeText">
+      לפני שמעדכנים את הדירוג, צריך לאשר:
+    </p>
+
+    <div class="checkboxRow">
+      <input type="checkbox" id="pledgeCheck">
+      <label for="pledgeCheck" id="pledgeLabel">
+        אני מתחייב/ת שהייתי בחדר הזה במהלך החודש האחרון, ושאני מדרג/ת אותו לכל היותר פעם אחת (אפשר לשנות את הדירוג שלי, אבל לא לרשום כמה דירוגים שונים).
+      </label>
+    </div>
+
+    <div class="modalActions">
+      <button id="pledgeCancelBtn" class="danger">ביטול</button>
+      <button id="pledgeConfirmBtn">מאשר/ת ומעדכן/ת</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
@@ -137,7 +216,7 @@
     appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
   };
 
-  // ✅ לשים כאן את המייל של המנהלת (כמו ב-Firebase Authentication)
+  // ✅ להשאיר את המייל שלך כאן
   const ADMIN_EMAIL = "sigalp@gmail.com";
 
   const app = initializeApp(firebaseConfig);
@@ -163,11 +242,21 @@
   const excelFile = document.getElementById("excelFile");
   const importBtn = document.getElementById("importBtn");
 
+  // modal dom
+  const pledgeOverlay = document.getElementById("pledgeOverlay");
+  const pledgeTitle = document.getElementById("pledgeTitle");
+  const pledgeCheck = document.getElementById("pledgeCheck");
+  const pledgeCancelBtn = document.getElementById("pledgeCancelBtn");
+  const pledgeConfirmBtn = document.getElementById("pledgeConfirmBtn");
+
   let uid = null;
   let isAdmin = false;
   let editingId = null;
 
-  // תמיד מתחילים כאורח (מנהלת רק דרך הנקודה בכל רענון)
+  // state for rating pledge
+  let pendingRate = null; // {roomId, value, roomName}
+
+  // Always start as guest (admin only via secret dot each load)
   try { await signOut(auth); } catch {}
 
   secretDot.onclick = () => loginCard.classList.toggle("hidden");
@@ -184,7 +273,6 @@
     }
 
     uid = user.uid;
-
     const currentEmail = (user.email || "").toLowerCase().trim();
     const adminEmail = (ADMIN_EMAIL || "").toLowerCase().trim();
     isAdmin = adminEmail !== "" && currentEmail === adminEmail;
@@ -206,21 +294,27 @@
     }
   };
 
+  // ✅ SORT: descending by your score (10 top)
   function loadRooms() {
+    const qRooms = query(collection(db, "rooms")); // fetch all then sort client-side
     onSnapshot(
-      collection(db, "rooms"),
+      qRooms,
       (snap) => {
+        const rows = [];
+        snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
+
+        rows.sort((a, b) => (Number(b.score ?? -999) - Number(a.score ?? -999)));
+
         roomsEl.innerHTML = "";
-        snap.forEach((d) => {
-          const r = d.data();
+        for (const r of rows) {
           const tr = document.createElement("tr");
 
           tr.innerHTML = `
             <td>${escapeHTML(r.name)}</td>
             <td>${escapeHTML(r.city || "")}</td>
             <td>${escapeHTML(String(r.score ?? ""))}</td>
-            <td id="avg-${d.id}">—</td>
-            <td id="cnt-${d.id}">0</td>
+            <td id="avg-${r.id}">—</td>
+            <td id="cnt-${r.id}">0</td>
             <td class="actions"></td>
           `;
 
@@ -229,7 +323,7 @@
           const rateBtn = document.createElement("button");
           rateBtn.textContent = "דרג";
           rateBtn.className = "small";
-          rateBtn.onclick = () => rateRoom(d.id);
+          rateBtn.onclick = () => startRateFlow(r.id, r.name);
           actions.appendChild(rateBtn);
 
           if (isAdmin) {
@@ -237,7 +331,7 @@
             editBtn.textContent = "ערוך";
             editBtn.className = "small";
             editBtn.onclick = () => {
-              editingId = d.id;
+              editingId = r.id;
               nameEl.value = r.name || "";
               cityEl.value = r.city || "";
               scoreEl.value = String(r.score ?? "");
@@ -250,7 +344,7 @@
             delBtn.className = "small danger";
             delBtn.onclick = async () => {
               if (!confirm(`למחוק את "${r.name}"?`)) return;
-              try { await deleteDoc(doc(db, "rooms", d.id)); }
+              try { await deleteDoc(doc(db, "rooms", r.id)); }
               catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
             };
 
@@ -258,13 +352,12 @@
           }
 
           roomsEl.appendChild(tr);
-          listenRatings(d.id);
-        });
+          listenRatings(r.id);
+        }
       },
       (err) => {
-        // ✅ אם הרשאות הקריאה חוסמות – תראי את זה
         console.error("Rooms read error:", err);
-        alert("אי אפשר לקרוא חדרים (כנראה הרשאות Firestore): " + (err.code || err.message));
+        alert("אי אפשר לקרוא חדרים (הרשאות Firestore): " + (err.code || err.message));
         roomsEl.innerHTML = "";
       }
     );
@@ -299,21 +392,53 @@
     }
   };
 
-  async function rateRoom(roomId) {
+  // ⭐ New rating flow with pledge
+  function startRateFlow(roomId, roomName){
     const v = parseInt(prompt("ציון 1–10"), 10);
     if (Number.isNaN(v) || v < 1 || v > 10) return;
 
+    pendingRate = { roomId, value: v, roomName };
+    pledgeTitle.textContent = `דירוג: ${roomName}`;
+    pledgeCheck.checked = false;
+    pledgeOverlay.classList.remove("hidden");
+  }
+
+  pledgeCancelBtn.onclick = () => {
+    pendingRate = null;
+    pledgeOverlay.classList.add("hidden");
+  };
+
+  pledgeConfirmBtn.onclick = async () => {
+    if (!pendingRate) return;
+
+    if (!pledgeCheck.checked) {
+      alert("צריך לסמן שהסכמת להתחייבות כדי לעדכן דירוג.");
+      return;
+    }
+
+    const { roomId, value } = pendingRate;
+
     try {
+      // one rating per user per room (doc id = roomId_uid)
       await setDoc(
         doc(db, "ratings", `${roomId}_${uid}`),
-        { roomId, uid, value: v },
+        {
+          roomId,
+          uid,
+          value,
+          pledgeAccepted: true,
+          pledgeTextVersion: 1,
+          pledgedAt: Date.now()
+        },
         { merge: true }
       );
+      pledgeOverlay.classList.add("hidden");
+      pendingRate = null;
     } catch (e) {
       console.error(e);
       alert("שגיאה בדירוג: " + (e.code || e.message));
     }
-  }
+  };
 
   function listenRatings(roomId) {
     const q = query(collection(db, "ratings"), where("roomId", "==", roomId));
@@ -321,6 +446,7 @@
       let sum = 0;
       s.forEach(d => sum += Number(d.data().value || 0));
       const avg = s.size ? (sum / s.size).toFixed(1) : "—";
+
       const avgEl = document.getElementById(`avg-${roomId}`);
       const cntEl = document.getElementById(`cnt-${roomId}`);
       if (avgEl) avgEl.textContent = avg;
@@ -368,10 +494,7 @@
           const rawScore = String(row[colScore] ?? "").trim();
           const score = parseInt(rawScore, 10);
 
-          if (!name) {
-            skipped++; if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: חסר name`);
-            continue;
-          }
+          if (!name) { skipped++; if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: חסר name`); continue; }
           if (Number.isNaN(score) || score < 1 || score > 10) {
             skipped++; if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: score לא תקין (${rawScore})`);
             continue;
