@@ -22,7 +22,6 @@
       font-size:19px;
     }
 
-    /* ✅ כבר לא משתמשים ב-header כמסגרת רוחב, רק main */
     main{max-width:1200px;margin:auto;padding:24px}
 
     h1{margin:0;font-size:42px}
@@ -126,31 +125,25 @@
     .checkboxRow input{width:auto; margin-top:4px}
     .checkboxRow label{font-size:16px; color:var(--text)}
 
-    /* status is kept only for JS, hidden from UI */
     #status { display:none; }
 
-    /* ✅ פס עליון שחור + לוגו באמצע + צור קשר שמאלה */
     .top-bar{
       position: sticky;
       top: 0;
       z-index: 1000;
-
       background: #000;
       height: 120px;
-
       display: grid;
       grid-template-columns: auto 1fr auto;
       align-items: center;
-
       padding: 0 24px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     }
 
     .contact-link{
-      justify-self: start;  /* הכי שמאלה */
+      justify-self: start;
       color:#fff;
       text-decoration:none;
-
       padding: 8px 16px;
       border: 1px solid #333;
       border-radius: 999px;
@@ -160,16 +153,13 @@
     .contact-link:hover{background: rgba(255,255,255,0.12);}
 
     .site-logo{
-      justify-self: center; /* מרכז אמיתי */
+      justify-self: center;
       max-height: 120px;
       width: auto;
       display:block;
     }
 
-    /* רווח לימין כדי שהמרכז יהיה באמת מרכז */
-    .right-spacer{
-      width: 120px;
-    }
+    .right-spacer{ width: 120px; }
 
     @media (max-width: 700px){
       .top-bar{
@@ -187,20 +177,15 @@
 
 <body>
 
-<!-- ✅ פס שחור למעלה -->
 <header class="top-bar">
-  <!-- צור קשר שמאלה -->
   <a href="mailto:sigalp@gmail.com?subject=פנייה מאתר UNLOCKED" class="contact-link">
     צור קשר
   </a>
 
-  <!-- הלוגו באמצע -->
   <img src="unlocked-logo.png" alt="UNLOCKED logo" class="site-logo" />
 
-  <!-- ספייסר לימין כדי לשמור מרכז -->
   <div class="right-spacer"></div>
 
-  <!-- סטטוס נסתר בשביל JS -->
   <span id="status" style="display:none">טוען…</span>
 </header>
 
@@ -245,12 +230,21 @@
     <p class="muted">כותרות נתמכות: name/city/score או שם/עיר/ציון.</p>
     <input type="file" id="excelFile" accept=".xlsx">
     <button id="importBtn">ייבוא חדרים</button>
+
+    <hr>
+
+    <h2>📥 ייבוא דירוגי קהילה (עמודות C + D)</h2>
+    <p class="muted">
+      הקובץ צריך לכלול: שם + עיר (כמו באתר), ובעמודות C ו-D דירוגים (1–10) של שני אנשים קבועים.
+      אם תא ריק – לא ייכנס דירוג.
+    </p>
+    <input type="file" id="ratingsExcelFile" accept=".xlsx">
+    <button id="importRatingsBtn">ייבוא דירוגים (C + D)</button>
   </section>
 </main>
 
 <div id="secretLogin" title="admin"></div>
 
-<!-- Rating pledge modal -->
 <div id="pledgeOverlay" class="modalOverlay hidden" role="dialog" aria-modal="true">
   <div class="modal" id="pledgeModal">
     <h3 id="pledgeTitle">דירוג חדר</h3>
@@ -271,9 +265,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import {
-    getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
     getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
     onSnapshot, query, where, setDoc, writeBatch
@@ -288,14 +280,13 @@
     appId: "1:565517769840:web:aeb892e7ea92713a4e28b5"
   };
 
-  // ✅ לשים כאן את המייל שאת מתחברת איתו כמנהלת
   const ADMIN_EMAIL = "sigalp@gmail.com";
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const statusEl   = document.getElementById("status"); // hidden but exists
+  const statusEl   = document.getElementById("status");
   const roomsEl    = document.getElementById("rooms");
   const adminPanel = document.getElementById("adminPanel");
   const loginCard  = document.getElementById("loginCard");
@@ -314,6 +305,9 @@
   const excelFile = document.getElementById("excelFile");
   const importBtn = document.getElementById("importBtn");
 
+  const ratingsExcelFile = document.getElementById("ratingsExcelFile");
+  const importRatingsBtn = document.getElementById("importRatingsBtn");
+
   const pledgeOverlay    = document.getElementById("pledgeOverlay");
   const pledgeModal      = document.getElementById("pledgeModal");
   const pledgeTitle      = document.getElementById("pledgeTitle");
@@ -324,10 +318,8 @@
   let uid = null;
   let isAdmin = false;
   let editingId = null;
+  let pendingRate = null;
 
-  let pendingRate = null; // {roomId, value, roomName}
-
-  // תמיד להתחיל אורח (מנהלת רק מהנקודה אחרי רפרש)
   try { await signOut(auth); } catch {}
 
   secretDot.onclick = () => loginCard.classList.toggle("hidden");
@@ -370,8 +362,6 @@
       (snap) => {
         const rows = [];
         snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
-
-        // מיון יורד לפי ציון האתר (score)
         rows.sort((a, b) => (Number(b.score ?? -999) - Number(a.score ?? -999)));
 
         roomsEl.innerHTML = "";
@@ -518,6 +508,7 @@
     });
   }
 
+  // ✅ ייבוא חדרים (כמו שהיה לך)
   importBtn.onclick = () => {
     if (!isAdmin) return alert("אין הרשאה");
 
@@ -592,6 +583,146 @@
 
     reader.readAsBinaryString(file);
   };
+
+  // ✅ חדש: ייבוא דירוגים מקובץ עם C ו-D
+  importRatingsBtn.onclick = async () => {
+    if (!isAdmin) return alert("אין הרשאה");
+
+    const file = ratingsExcelFile.files[0];
+    if (!file) return alert("לא נבחר קובץ");
+
+    // 1) בונים מפה של חדרים קיימים: "name||city" -> roomId
+    let roomsMap = new Map();
+    try {
+      await new Promise((resolve, reject) => {
+        const unsub = onSnapshot(
+          query(collection(db, "rooms")),
+          (snap) => {
+            roomsMap = new Map();
+            snap.forEach((d) => {
+              const r = d.data();
+              roomsMap.set(normalizeKey(r.name, r.city), d.id);
+            });
+            unsub();
+            resolve();
+          },
+          (err) => reject(err)
+        );
+      });
+    } catch (e) {
+      console.error(e);
+      return alert("שגיאה בטעינת החדרים מהאתר: " + (e.code || e.message));
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: "binary" });
+        const sheetName = wb.SheetNames.includes("חדרים") ? "חדרים" : wb.SheetNames[0];
+        const sheet = wb.Sheets[sheetName];
+
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        if (data.length < 2) return alert("הקובץ ריק או יש רק כותרות");
+
+        const headers = data[0].map(h => String(h).trim().toLowerCase());
+        const col = (names, fallback) => {
+          const idx = headers.findIndex(h => names.includes(h));
+          return idx >= 0 ? idx : fallback;
+        };
+
+        const colName = col(["name","שם"], 0);
+        const colCity = col(["city","עיר","מקום"], 1);
+
+        // C=2, D=3
+        const colR1 = 2;
+        const colR2 = 3;
+
+        const communityUid1 = "community_1";
+        const communityUid2 = "community_2";
+
+        let added = 0;
+        let skipped = 0;
+        const skipSamples = [];
+
+        let batch = writeBatch(db);
+        let batchCount = 0;
+
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+
+          const name = String(row[colName] ?? "").trim();
+          const city = String(row[colCity] ?? "").trim();
+
+          if (!name) { skipped++; if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: חסר שם`); continue; }
+
+          const roomId = roomsMap.get(normalizeKey(name, city));
+          if (!roomId) {
+            skipped++;
+            if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: לא נמצא חדר באתר (${name} / ${city})`);
+            continue;
+          }
+
+          const raw1 = String(row[colR1] ?? "").trim();
+          if (raw1 !== "") {
+            const v1 = parseInt(raw1, 10);
+            if (Number.isNaN(v1) || v1 < 1 || v1 > 10) {
+              skipped++;
+              if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: דירוג C לא תקין (${raw1})`);
+            } else {
+              const ref1 = doc(db, "ratings", `${roomId}_${communityUid1}`);
+              batch.set(ref1, {
+                roomId, uid: communityUid1, value: v1,
+                pledgeAccepted: true, imported: true, importedAt: Date.now()
+              }, { merge: true });
+              added++; batchCount++;
+            }
+          }
+
+          const raw2 = String(row[colR2] ?? "").trim();
+          if (raw2 !== "") {
+            const v2 = parseInt(raw2, 10);
+            if (Number.isNaN(v2) || v2 < 1 || v2 > 10) {
+              skipped++;
+              if (skipSamples.length < 5) skipSamples.push(`שורה ${i+1}: דירוג D לא תקין (${raw2})`);
+            } else {
+              const ref2 = doc(db, "ratings", `${roomId}_${communityUid2}`);
+              batch.set(ref2, {
+                roomId, uid: communityUid2, value: v2,
+                pledgeAccepted: true, imported: true, importedAt: Date.now()
+              }, { merge: true });
+              added++; batchCount++;
+            }
+          }
+
+          if (batchCount >= 450) {
+            await batch.commit();
+            batch = writeBatch(db);
+            batchCount = 0;
+          }
+        }
+
+        if (batchCount > 0) await batch.commit();
+
+        let msg = `✅ נוספו/עודכנו ${added} דירוגים (C+D)`;
+        if (skipped) msg += `\n⚠️ דולגו ${skipped} שורות/תאים לא תקינים.`;
+        if (skipSamples.length) msg += `\nדוגמאות:\n- ${skipSamples.join("\n- ")}`;
+
+        alert(msg);
+        ratingsExcelFile.value = "";
+      } catch (err) {
+        console.error(err);
+        alert("שגיאה בייבוא דירוגים: " + (err.code || err.message || err));
+      }
+    };
+
+    reader.readAsBinaryString(file);
+  };
+
+  function normalizeKey(name, city) {
+    const n = String(name || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const c = String(city || "").trim().toLowerCase().replace(/\s+/g, " ");
+    return `${n}||${c}`;
+  }
 
   function escapeHTML(s){
     return String(s ?? "").replace(/[&<>"']/g, m => ({
