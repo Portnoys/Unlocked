@@ -27,17 +27,6 @@
     h1{margin:0;font-size:42px}
     h2{margin:0 0 12px;font-size:28px}
 
-    .badge{
-      display:inline-block;
-      padding:6px 14px;
-      border-radius:999px;
-      background:#0b1020;
-      border:1px solid var(--line);
-      text-decoration:none;
-      color:inherit;
-    }
-    .ok{color:var(--good)}
-
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
       border: 1px solid var(--line);
@@ -185,7 +174,6 @@
   <img src="unlocked-logo.png" alt="UNLOCKED logo" class="site-logo" />
 
   <div class="right-spacer"></div>
-
   <span id="status" style="display:none">טוען…</span>
 </header>
 
@@ -201,12 +189,21 @@
   </section>
 
   <section class="card">
-    <h2>חדרים (ממויין לפי ציון האתר)</h2>
+    <h2>חדרים (ממויין לפי דירוג כולל)</h2>
+    <p class="muted">
+      המיון נעשה לפי ממוצע כולל: (ציון האתר + כל דירוגי הקהילה) / (מספר מדרגים + 1).
+      בשוויון — מי שקיבל יותר דירוגים מהקהילה יופיע למעלה.
+    </p>
     <table>
       <thead>
         <tr>
-          <th>שם</th><th>עיר</th><th>ציון האתר</th>
-          <th>ממוצע קהילה</th><th>דירגו</th><th>פעולות</th>
+          <th>שם</th>
+          <th>עיר</th>
+          <th>ציון האתר</th>
+          <th>ממוצע קהילה</th>
+          <th>דירגו</th>
+          <th>דירוג כולל</th>
+          <th>פעולות</th>
         </tr>
       </thead>
       <tbody id="rooms"></tbody>
@@ -324,6 +321,150 @@
 
   secretDot.onclick = () => loginCard.classList.toggle("hidden");
 
+  // ===== NEW: caches + single listeners (rooms + ratings) =====
+  let roomsCache = [];          // [{id, name, city, score}]
+  let ratingsAgg = new Map();   // roomId -> {sum, count}
+  let roomsUnsub = null;
+  let ratingsUnsub = null;
+
+  function startGlobalListeners(){
+    if (!roomsUnsub) {
+      roomsUnsub = onSnapshot(
+        query(collection(db, "rooms")),
+        (snap) => {
+          roomsCache = [];
+          snap.forEach((d) => roomsCache.push({ id: d.id, ...d.data() }));
+          renderRoomsSorted();
+        },
+        (err) => {
+          console.error("Rooms read error:", err);
+          alert("שגיאה בטעינת חדרים: " + (err.code || err.message));
+          roomsEl.innerHTML = "";
+        }
+      );
+    }
+
+    if (!ratingsUnsub) {
+      ratingsUnsub = onSnapshot(
+        collection(db, "ratings"),
+        (snap) => {
+          const m = new Map();
+          snap.forEach((d) => {
+            const r = d.data();
+            const roomId = r.roomId;
+            const v = Number(r.value || 0);
+            if (!roomId || !Number.isFinite(v)) return;
+
+            const cur = m.get(roomId) || { sum: 0, count: 0 };
+            cur.sum += v;
+            cur.count += 1;
+            m.set(roomId, cur);
+          });
+          ratingsAgg = m;
+          renderRoomsSorted();
+        },
+        (err) => {
+          console.error("Ratings read error:", err);
+          ratingsAgg = new Map();
+          renderRoomsSorted();
+        }
+      );
+    }
+  }
+
+  function renderRoomsSorted(){
+    const rows = roomsCache.map((r) => {
+      const comm = ratingsAgg.get(r.id) || { sum: 0, count: 0 };
+
+      const myScore = Number(r.score ?? 0);
+      const commSum = Number(comm.sum ?? 0);
+      const commCount = Number(comm.count ?? 0);
+
+      // תמיד יש ציון אתר (שלך), אבל נשמור על זה יציב
+      const includeMy = Number.isFinite(myScore) && myScore > 0;
+
+      const totalCount = includeMy ? (1 + commCount) : commCount;
+      const totalSum   = includeMy ? (myScore + commSum) : commSum;
+
+      const combinedAvg = totalCount ? (totalSum / totalCount) : -999;
+      const communityAvg = commCount ? (commSum / commCount) : null;
+
+      return {
+        ...r,
+        communitySum: commSum,
+        communityCount: commCount,
+        communityAvg,
+        combinedAvg
+      };
+    });
+
+    // ✅ sort: combinedAvg desc, then communityCount desc, then name
+    rows.sort((a, b) => {
+      const d1 = (b.combinedAvg - a.combinedAvg);
+      if (Math.abs(d1) > 1e-9) return d1;
+
+      const d2 = (b.communityCount - a.communityCount);
+      if (d2 !== 0) return d2;
+
+      return String(a.name || "").localeCompare(String(b.name || ""), "he");
+    });
+
+    roomsEl.innerHTML = "";
+
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+
+      const commAvgText = (r.communityAvg == null) ? "—" : r.communityAvg.toFixed(1);
+      const combinedText = (r.combinedAvg <= -900) ? "—" : r.combinedAvg.toFixed(1);
+
+      tr.innerHTML = `
+        <td>${escapeHTML(r.name)}</td>
+        <td>${escapeHTML(r.city || "")}</td>
+        <td>${escapeHTML(String(r.score ?? ""))}</td>
+        <td>${escapeHTML(commAvgText)}</td>
+        <td>${escapeHTML(String(r.communityCount || 0))}</td>
+        <td><strong>${escapeHTML(combinedText)}</strong></td>
+        <td class="actions"></td>
+      `;
+
+      const actions = tr.querySelector(".actions");
+
+      const rateBtn = document.createElement("button");
+      rateBtn.textContent = "דרג";
+      rateBtn.className = "small";
+      rateBtn.onclick = () => startRateFlow(r.id, r.name);
+      actions.appendChild(rateBtn);
+
+      if (isAdmin) {
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "ערוך";
+        editBtn.className = "small";
+        editBtn.onclick = () => {
+          editingId = r.id;
+          nameEl.value = r.name || "";
+          cityEl.value = r.city || "";
+          scoreEl.value = String(r.score ?? "");
+          formTitle.textContent = "עריכת חדר";
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        };
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "מחק";
+        delBtn.className = "small danger";
+        delBtn.onclick = async () => {
+          if (!confirm(`למחוק את "${r.name}"?`)) return;
+          try { await deleteDoc(doc(db, "rooms", r.id)); }
+          catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
+        };
+
+        actions.append(editBtn, delBtn);
+      }
+
+      roomsEl.appendChild(tr);
+    }
+  }
+  // ===== END NEW =====
+
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       uid = null;
@@ -342,7 +483,7 @@
     if (statusEl) statusEl.textContent = isAdmin ? "מנהלת" : "אורח";
     adminPanel.classList.toggle("hidden", !isAdmin);
 
-    loadRooms();
+    startGlobalListeners(); // ✅ replaces loadRooms()
   });
 
   loginBtn.onclick = async () => {
@@ -354,72 +495,6 @@
       alert("שגיאת התחברות: " + (e.code || e.message));
     }
   };
-
-  function loadRooms() {
-    const qRooms = query(collection(db, "rooms"));
-    onSnapshot(
-      qRooms,
-      (snap) => {
-        const rows = [];
-        snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
-        rows.sort((a, b) => (Number(b.score ?? -999) - Number(a.score ?? -999)));
-
-        roomsEl.innerHTML = "";
-        for (const r of rows) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${escapeHTML(r.name)}</td>
-            <td>${escapeHTML(r.city || "")}</td>
-            <td>${escapeHTML(String(r.score ?? ""))}</td>
-            <td id="avg-${r.id}">—</td>
-            <td id="cnt-${r.id}">0</td>
-            <td class="actions"></td>
-          `;
-
-          const actions = tr.querySelector(".actions");
-
-          const rateBtn = document.createElement("button");
-          rateBtn.textContent = "דרג";
-          rateBtn.className = "small";
-          rateBtn.onclick = () => startRateFlow(r.id, r.name);
-          actions.appendChild(rateBtn);
-
-          if (isAdmin) {
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "ערוך";
-            editBtn.className = "small";
-            editBtn.onclick = () => {
-              editingId = r.id;
-              nameEl.value = r.name || "";
-              cityEl.value = r.city || "";
-              scoreEl.value = String(r.score ?? "");
-              formTitle.textContent = "עריכת חדר";
-              window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-            };
-
-            const delBtn = document.createElement("button");
-            delBtn.textContent = "מחק";
-            delBtn.className = "small danger";
-            delBtn.onclick = async () => {
-              if (!confirm(`למחוק את "${r.name}"?`)) return;
-              try { await deleteDoc(doc(db, "rooms", r.id)); }
-              catch (e) { console.error(e); alert("שגיאה במחיקה: " + (e.code || e.message)); }
-            };
-
-            actions.append(editBtn, delBtn);
-          }
-
-          roomsEl.appendChild(tr);
-          listenRatings(r.id);
-        }
-      },
-      (err) => {
-        console.error("Rooms read error:", err);
-        alert("שגיאה בטעינת חדרים: " + (err.code || err.message));
-        roomsEl.innerHTML = "";
-      }
-    );
-  }
 
   saveBtn.onclick = async () => {
     if (!isAdmin) return alert("אין הרשאה");
@@ -494,21 +569,7 @@
     }
   };
 
-  function listenRatings(roomId) {
-    const q = query(collection(db, "ratings"), where("roomId", "==", roomId));
-    onSnapshot(q, (s) => {
-      let sum = 0;
-      s.forEach(d => sum += Number(d.data().value || 0));
-      const avg = s.size ? (sum / s.size).toFixed(1) : "—";
-
-      const avgEl = document.getElementById(`avg-${roomId}`);
-      const cntEl = document.getElementById(`cnt-${roomId}`);
-      if (avgEl) avgEl.textContent = avg;
-      if (cntEl) cntEl.textContent = String(s.size);
-    });
-  }
-
-  // ✅ ייבוא חדרים (כמו שהיה לך)
+  // ✅ ייבוא חדרים
   importBtn.onclick = () => {
     if (!isAdmin) return alert("אין הרשאה");
 
@@ -584,14 +645,14 @@
     reader.readAsBinaryString(file);
   };
 
-  // ✅ חדש: ייבוא דירוגים מקובץ עם C ו-D
+  // ✅ ייבוא דירוגים (C + D)
   importRatingsBtn.onclick = async () => {
     if (!isAdmin) return alert("אין הרשאה");
 
     const file = ratingsExcelFile.files[0];
     if (!file) return alert("לא נבחר קובץ");
 
-    // 1) בונים מפה של חדרים קיימים: "name||city" -> roomId
+    // מפה של חדרים קיימים: "name||city" -> roomId
     let roomsMap = new Map();
     try {
       await new Promise((resolve, reject) => {
@@ -633,9 +694,8 @@
         const colName = col(["name","שם"], 0);
         const colCity = col(["city","עיר","מקום"], 1);
 
-        // C=2, D=3
-        const colR1 = 2;
-        const colR2 = 3;
+        const colR1 = 2; // C
+        const colR2 = 3; // D
 
         const communityUid1 = "community_1";
         const communityUid2 = "community_2";
